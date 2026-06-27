@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useOrder } from '../../context/OrderContext';
+import { apiUrl } from '../../utils/api';
 import {
   Plus,
   Edit2,
@@ -48,7 +49,7 @@ const MenuManagement = () => {
   const loadAllProducts = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/products');
+      const response = await fetch(apiUrl('/api/products'));
       if (response.ok) {
         const prodData = await response.json();
         // Sort alphabetically by name
@@ -84,7 +85,7 @@ const MenuManagement = () => {
       // Optimistic UI Update
       setProducts(prev => prev.map(p => p.id === product.id ? { ...p, is_available: updatedStatus } : p));
 
-      const response = await fetch(`/api/products/${product.id}`, {
+      const response = await fetch(apiUrl(`/api/products/${product.id}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +132,7 @@ const MenuManagement = () => {
     }
 
     try {
-      const response = await fetch(`/api/products/${product.id}`, {
+      const response = await fetch(apiUrl(`/api/products/${product.id}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -164,7 +165,7 @@ const MenuManagement = () => {
         points_reward: parseInt(formData.points_reward) || 0
       };
 
-      const url = isEditing ? `/api/products/${editingId}` : '/api/products';
+      const url = apiUrl(isEditing ? `/api/products/${editingId}` : '/api/products');
       const method = isEditing ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

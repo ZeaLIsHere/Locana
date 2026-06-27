@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { apiUrl } from '../../utils/api';
 import { 
   BarChart, 
   Bar, 
@@ -41,7 +42,7 @@ const ManagerDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/reports/dashboard', {
+      const response = await fetch(apiUrl('/api/reports/dashboard'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }

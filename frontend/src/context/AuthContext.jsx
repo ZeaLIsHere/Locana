@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiUrl } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -16,7 +17,7 @@ export const AuthProvider = ({ children }) => {
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
-      
+
       // Fetch latest profile to verify token and sync loyalty points
       fetchProfile(savedToken);
     } else {
@@ -26,7 +27,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async (authToken) => {
     try {
-      const response = await fetch('/api/auth/profile', {
+      const response = await fetch(apiUrl('/api/auth/profile'), {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -50,7 +51,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setError(null);
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

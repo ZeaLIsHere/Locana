@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOrder } from '../../context/OrderContext';
 import { useAuth } from '../../context/AuthContext';
+import { apiUrl } from '../../utils/api';
 import { 
   Search, 
   CreditCard, 
@@ -81,7 +82,7 @@ const CashierPOS = () => {
   const searchCustomer = async () => {
     if (!customerSearch.trim()) return;
     try {
-      const response = await fetch(`/api/orders`); // we can query order backend list or create simple member check endpoint
+      const response = await fetch(apiUrl(`/api/orders`)); // we can query order backend list or create simple member check endpoint
       // To make it easy, we will search from all users of type customer
       const token = localStorage.getItem('locana_token');
       const usersRes = await fetch(`/api/orders`, { // wait, let's look up members by fetching users if possible
@@ -172,7 +173,7 @@ const CashierPOS = () => {
     };
 
     try {
-      const response = await fetch('/api/orders', {
+      const response = await fetch(apiUrl('/api/orders'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

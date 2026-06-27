@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useOrder } from '../../context/OrderContext';
 import { useAuth } from '../../context/AuthContext';
+import { apiUrl } from '../../utils/api';
 import {
   Search,
   ShoppingBag,
@@ -122,7 +123,7 @@ const CustomerMenu = () => {
     if (!checkoutResult) return;
     setSimulatingPayment(true);
     try {
-      const response = await fetch(`/api/orders/${checkoutResult.order.id}/pay`, {
+      const response = await fetch(apiUrl(`/api/orders/${checkoutResult.order.id}/pay`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

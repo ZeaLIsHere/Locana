@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { apiUrl } from '../../utils/api';
 import {
   FileText,
   Calendar,
@@ -198,7 +199,7 @@ const SalesReports = () => {
       if (sd) params.set('startDate', sd);
       if (ed) params.set('endDate', ed);
 
-      const response = await fetch(`/api/reports/${tab.endpoint}?${params.toString()}`, {
+      const response = await fetch(apiUrl(`/api/reports/${tab.endpoint}?${params.toString()}`), {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 

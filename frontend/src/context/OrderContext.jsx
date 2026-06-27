@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { apiUrl } from '../utils/api';
 
 const OrderContext = createContext(null);
 
@@ -23,8 +24,8 @@ export const OrderProvider = ({ children }) => {
     setLoadingMenu(true);
     try {
       const [catRes, prodRes] = await Promise.all([
-        fetch('/api/categories'),
-        fetch('/api/products')
+        fetch(apiUrl('/api/categories')),
+        fetch(apiUrl('/api/products'))
       ]);
 
       if (catRes.ok && prodRes.ok) {
@@ -45,7 +46,7 @@ export const OrderProvider = ({ children }) => {
     if (!token) return;
     setLoadingOrders(true);
     try {
-      const response = await fetch('/api/orders', {
+      const response = await fetch(apiUrl('/api/orders'), {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -65,7 +66,7 @@ export const OrderProvider = ({ children }) => {
   useEffect(() => {
     // We open SSE connection for everyone, but it is especially used by Cashier, Kitchen, and Customer
     console.log('SSE: Establishing real-time event stream connection...');
-    const eventSource = new EventSource('/api/realtime');
+    const eventSource = new EventSource(apiUrl('/api/realtime'));
 
     eventSource.onmessage = (event) => {
       try {
@@ -103,13 +104,22 @@ export const OrderProvider = ({ children }) => {
     fetchMenu();
   }, []);
 
-  // Fetch orders when token (login state) changes
+  // Fetch orders when token (login state) changes & setup polling fallback (crucial for Vercel Serverless compatibility)
   useEffect(() => {
+    let pollInterval;
     if (token && ['owner', 'manager', 'cashier', 'kitchen'].includes(user?.role)) {
       fetchOrders();
+      pollInterval = setInterval(() => {
+        fetchOrders();
+      }, 8000);
     } else {
       setOrders([]);
     }
+    return () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+    };
   }, [token, user]);
 
   // Cart Functions
@@ -221,7 +231,7 @@ export const OrderProvider = ({ children }) => {
     };
 
     try {
-      const response = await fetch('/api/orders', {
+      const response = await fetch(apiUrl('/api/orders'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -248,7 +258,7 @@ export const OrderProvider = ({ children }) => {
   const payOrder = async (orderId) => {
     if (!token) return;
     try {
-      const response = await fetch(`/api/orders/${orderId}/pay`, {
+      const response = await fetch(apiUrl(`/api/orders/${orderId}/pay`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -274,7 +284,7 @@ export const OrderProvider = ({ children }) => {
   const updateStatus = async (orderId, newStatus) => {
     if (!token) return;
     try {
-      const response = await fetch(`/api/orders/${orderId}/status`, {
+      const response = await fetch(apiUrl(`/api/orders/${orderId}/status`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

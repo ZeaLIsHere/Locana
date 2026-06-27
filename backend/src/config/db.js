@@ -12,6 +12,14 @@ let isMock = false;
 // Check if Firebase service account key exists
 const firebaseConfigPath = process.env.FIREBASE_SERVICE_ACCOUNT_KEY || path.join(__dirname, '../../serviceAccountKey.json');
 
+// Diagnostik: log env vars yang tersedia (tanpa nilai sensitif)
+console.log('[DB] ENV CHECK:', {
+  USE_MOCK_FIREBASE: process.env.USE_MOCK_FIREBASE,
+  FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID ? '✓ set' : '✗ missing',
+  FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL ? '✓ set' : '✗ missing',
+  FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY ? '✓ set' : '✗ missing',
+});
+
 if (process.env.USE_MOCK_FIREBASE === 'true') {
   console.log('Firebase: Using Local Mock Firestore (Explicitly requested in .env)');
   db = new MockFirestore();
@@ -31,17 +39,19 @@ if (process.env.USE_MOCK_FIREBASE === 'true') {
   }
 } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-      })
-    });
+    if (admin.apps.length === 0) {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        })
+      });
+    }
     db = admin.firestore();
     console.log('Firebase: Connected to real Firebase Firestore Cloud via Env Variables');
   } catch (err) {
-    console.error('Firebase: Failed to connect via env, falling back to Local Mock Firestore. Error:', err.message);
+    console.error('Firebase: Failed to connect via env. Error:', err.message);
     db = new MockFirestore();
     isMock = true;
   }

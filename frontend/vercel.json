@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://GANTI_DENGAN_URL_RENDER_BACKEND/api/:path*"
+      "destination": "https://GANTI_DENGAN_URL_VERCEL_BACKEND/api/:path*"
     },
     {
       "source": "/:path*",

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useOrder } from '../context/OrderContext';
-import { LogOut, Coffee, Star, ShoppingBag, User } from 'lucide-react';
+import { LogOut, Star, ShoppingBag } from 'lucide-react';
+import logoLocana from '../assets/logo-locana.png';
 
 const Navbar = ({ onCartClick, showCartBadge = false }) => {
   const { user, logout } = useAuth();
@@ -35,17 +36,7 @@ const Navbar = ({ onCartClick, showCartBadge = false }) => {
         
         {/* Brand Logo */}
         <div className="flex items-center gap-1.5 md:gap-2">
-          <div className="flex h-8.5 w-8.5 md:h-10 md:w-10 items-center justify-center rounded-xl bg-amber-600 text-white shadow-md shadow-amber-600/25 shrink-0">
-            <Coffee className="h-4.5 w-4.5 md:h-5 md:w-5" />
-          </div>
-          <div>
-            <h1 className="text-lg md:text-xl font-bold tracking-tight text-stone-900 leading-none">
-              LOCANA
-            </h1>
-            <p className="text-[8px] md:text-[10px] font-medium tracking-widest text-amber-600 uppercase mt-0.5">
-              Ordering System
-            </p>
-          </div>
+          <img src={logoLocana} alt="Locana" className="h-8.5 md:h-10 w-auto shrink-0" />
         </div>
 
         {/* User Stats & Navigation */}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Coffee, Key, Mail, ShieldAlert, Sparkles, User, Users } from 'lucide-react';
+import { Key, Mail, ShieldAlert, Sparkles } from 'lucide-react';
+import logoLocana from '../assets/logo-locana.png';
 
 const Login = () => {
   const { login, error: authError } = useAuth();
@@ -57,8 +58,8 @@ const Login = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-900/60 to-transparent"></div>
         
         <div className="absolute bottom-16 left-16 right-16 flex flex-col justify-end text-white">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-600 shadow-lg shadow-amber-600/35">
-            <Coffee className="h-7 w-7 text-white" />
+          <div className="mb-4">
+            <img src={logoLocana} alt="Locana" className="h-14 w-auto" />
           </div>
           <span className="text-xs font-bold uppercase tracking-widest text-amber-500">Premium Coffee Shop</span>
           <h2 className="mt-2 text-4xl font-extrabold tracking-tight leading-tight">
@@ -77,13 +78,7 @@ const Login = () => {
           
           {/* Header Mobile Logo */}
           <div className="flex items-center gap-2 lg:hidden mb-6">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-600 text-white shadow-md">
-              <Coffee className="h-5.5 w-5.5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-stone-900 leading-none">LOCANA</h1>
-              <p className="text-[9px] font-semibold text-amber-600 uppercase tracking-widest mt-0.5">Ordering System</p>
-            </div>
+            <img src={logoLocana} alt="Locana" className="h-11 w-auto" />
           </div>
 
           <div className="mb-6">

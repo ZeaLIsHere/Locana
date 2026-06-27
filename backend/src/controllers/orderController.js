@@ -41,13 +41,86 @@ async function createOrder(req, res) {
       customerData = customerDoc.data();
     }
 
+    // 2.1 Calculate customer metrics: tier multiplier and birthday activity
+    let multiplier = 1.0;
+    let isBirthdayActive = false;
+    if (customer_id && customerData) {
+      // Calculate accumulated spending in the last 12 months
+      const ordersSnapshot = await db.collection('orders')
+        .where('customer_id', '==', customer_id)
+        .get();
+      let totalSpentLastYear = 0;
+      const now = new Date();
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(now.getFullYear() - 1);
+      ordersSnapshot.forEach(doc => {
+        const o = doc.data();
+        if (o.payment_status === 'paid' && o.status !== 'cancelled') {
+          const orderDate = new Date(o.created_at);
+          if (orderDate >= oneYearAgo) {
+            totalSpentLastYear += parseFloat(o.total_price) || 0;
+          }
+        }
+      });
+      if (totalSpentLastYear >= 3000000) {
+        multiplier = 1.5;
+      } else if (totalSpentLastYear >= 1500000) {
+        multiplier = 1.2;
+      }
+
+      // Calculate Birthday Activity
+      if (customerData.birthday) {
+        const bDate = new Date(customerData.birthday);
+        const bMonth = bDate.getMonth();
+        const bDay = bDate.getDate();
+        const diffs = [-1, 0, 1].map(offset => {
+          const bYear = new Date(now.getFullYear() + offset, bMonth, bDay);
+          return Math.abs(now.getTime() - bYear.getTime()) / (1000 * 60 * 60 * 24);
+        });
+        if (diffs.some(diff => diff <= 3)) {
+          isBirthdayActive = true;
+        }
+      }
+    }
+
     let totalPrice = 0;
-    let pointsEarned = 0;
     let pointsRedeemed = 0;
     const processedItems = [];
 
     // 3. Process each item
     for (const item of items) {
+      const qty = parseInt(item.quantity) || 1;
+
+      // Handle Point Rewards
+      if (item.product_id === 'reward-25' || item.product_id === 'reward-50' || item.product_id === 'reward-100') {
+        if (!customer_id) {
+          return res.status(400).json({ error: 'Must be logged in as a member to redeem rewards' });
+        }
+        let rewardPoints = 0;
+        let rewardName = '';
+        if (item.product_id === 'reward-25') {
+          rewardPoints = 25;
+          rewardName = 'Gratis Minuman Regular (Redeem 25 Poin)';
+        } else if (item.product_id === 'reward-50') {
+          rewardPoints = 50;
+          rewardName = 'Gratis Minuman + Croissant (Redeem 50 Poin)';
+        } else if (item.product_id === 'reward-100') {
+          rewardPoints = 100;
+          rewardName = 'Gratis Minuman Signature 1L (Redeem 100 Poin)';
+        }
+
+        pointsRedeemed += rewardPoints * qty;
+        processedItems.push({
+          product_id: item.product_id,
+          name: rewardName,
+          quantity: qty,
+          price_per_unit: 0,
+          notes: item.notes || '',
+          is_redeemed_by_points: true
+        });
+        continue;
+      }
+
       const product = productsMap[item.product_id];
       if (!product) {
         return res.status(400).json({ error: `Product with ID ${item.product_id} not found` });
@@ -56,7 +129,6 @@ async function createOrder(req, res) {
         return res.status(400).json({ error: `Product ${product.name} is currently unavailable` });
       }
 
-      const qty = parseInt(item.quantity) || 1;
       const isRedeemed = !!item.is_redeemed_by_points;
 
       if (isRedeemed) {
@@ -76,18 +148,25 @@ async function createOrder(req, res) {
           is_redeemed_by_points: true
         });
       } else {
-        totalPrice += product.price * qty;
-        pointsEarned += (product.points_reward || 0) * qty;
+        // Apply 20% discount on drinks if birthday is active
+        let itemPrice = product.price;
+        if (isBirthdayActive && (product.category_id === 'cat-coffee' || product.category_id === 'cat-non-coffee')) {
+          itemPrice = Math.round(product.price * 0.8);
+        }
+        totalPrice += itemPrice * qty;
         processedItems.push({
           product_id: product.id,
           name: product.name,
           quantity: qty,
-          price_per_unit: product.price,
+          price_per_unit: itemPrice,
           notes: item.notes || '',
           is_redeemed_by_points: false
         });
       }
     }
+
+    // 1 point for every Rp25,000 spent
+    const pointsEarned = customer_id ? Math.floor(totalPrice / 25000) * multiplier : 0;
 
     // Check if customer has enough points for redemptions
     if (customer_id && pointsRedeemed > customerData.loyalty_points) {

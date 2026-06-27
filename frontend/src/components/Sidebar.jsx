@@ -7,7 +7,8 @@ import {
   Layers, 
   ShoppingBag, 
   Users,
-  Settings
+  Settings,
+  FileText
 } from 'lucide-react';
 
 const Sidebar = ({ currentPage, onPageChange }) => {
@@ -18,8 +19,20 @@ const Sidebar = ({ currentPage, onPageChange }) => {
   const menuItems = [
     {
       id: 'manager',
-      label: 'Laporan Analitik',
+      label: 'Dashboard Analitik',
       icon: BarChart3,
+      roles: ['owner', 'manager']
+    },
+    {
+      id: 'reports',
+      label: 'Laporan Detail',
+      icon: FileText,
+      roles: ['owner', 'manager']
+    },
+    {
+      id: 'menu-management',
+      label: 'Kelola Menu',
+      icon: Settings,
       roles: ['owner', 'manager']
     },
     {

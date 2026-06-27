@@ -34,3 +34,10 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Firebase Secret & Local Mock DB
+serviceAccountKey.json
+**/serviceAccountKey.json
+mock_db.json
+**/mock_db.json
+backend/data/mock_db.json

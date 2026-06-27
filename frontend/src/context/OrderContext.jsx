@@ -173,7 +173,6 @@ export const OrderProvider = ({ children }) => {
   const getCartTotals = () => {
     let totalPrice = 0;
     let totalPointsCost = 0;
-    let totalPointsEarned = 0;
     let totalItemsCount = 0;
 
     cart.forEach(item => {
@@ -182,9 +181,15 @@ export const OrderProvider = ({ children }) => {
         totalPointsCost += item.points_cost * item.quantity;
       } else {
         totalPrice += item.price_per_unit * item.quantity;
-        totalPointsEarned += item.points_reward * item.quantity;
       }
     });
+
+    let multiplier = 1.0;
+    if (user && user.role === 'customer') {
+      if (user.membership_tier === 'Platinum') multiplier = 1.5;
+      else if (user.membership_tier === 'Gold') multiplier = 1.2;
+    }
+    const totalPointsEarned = Math.floor(totalPrice / 25000) * multiplier;
 
     return {
       totalPrice,

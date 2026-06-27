@@ -1,0 +1,46 @@
+Sales
+- Sales Recapitulation Report
+- Branch Top Sales Report
+- Sales Payment Recapitulation Report
+- Sales Recapitulation Detail Report
+- Sales Menu Recapitulation Report
+- Daily Sales Recapitulation Report
+- Sales Payment Summary Report
+- Daily Sales Summary Report
+- Daily Sales Payment Recapitulation Report
+- Daily Sales Menu Per Detail Category Report
+- Daily Sales Menu Report
+- Sales Menu Performance Report
+- Sales Recapitulation by Time Report
+- Sales Payment Summary By Branch Report
+- Sales Average Spending By Branch Report
+- Sales Summary By Branch Report
+- Sales Menu Recapitulation By Time Report
+- Average Sales Menu Recapitulation By Time Report
+- Guest Spent Time Report
+
+Inventory
+- Stock Opname Minus Resolve Report
+
+Accounting
+- Profit Loss Report
+
+POS
+- Cancel Menu Recapitulation Report
+- Cancel Menu Detail Report
+- Member Deposit Report
+- Staff Sales & Cancel Report
+- Staff Daily Sales Report
+- POS Daily Closing Report
+- Move Item Report
+- Promotion Report
+- Monthly POS Report
+- Daily POS Report
+- Change Payment Report
+- Member Deposit & Usage Report
+- Guest Comment Report
+- Sync Log Report
+- Promotion Detail By Time
+- Member Deposit By Payment Method Report
+- Move Table Report
+- Branch Menu Report

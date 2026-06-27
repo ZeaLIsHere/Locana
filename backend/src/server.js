@@ -47,4 +47,5 @@ async function initializeServer() {
   });
 }
 
+// Start active server instance
 initializeServer();

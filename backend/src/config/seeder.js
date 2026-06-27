@@ -6,45 +6,91 @@ async function seedDatabase(onlyMenu = false) {
 
   // 1. Seed Categories
   const categories = [
-    { id: 'cat-coffee', name: 'Coffee', slug: 'coffee' },
-    { id: 'cat-non-coffee', name: 'Non-Coffee', slug: 'non-coffee' },
-    { id: 'cat-food', name: 'Makanan Utama', slug: 'food' },
-    { id: 'cat-pastry', name: 'Pastry & Cemilan', slug: 'pastry' }
+    { id: 'cat-barista-special', name: "BARISTA'S SPECIAL", slug: 'barista-special' },
+    { id: 'cat-cold-brew', name: 'COLD BREW SERIES', slug: 'cold-brew' },
+    { id: 'cat-espresso-bar', name: 'ESPRESSO BAR', slug: 'espresso-bar' },
+    { id: 'cat-creation', name: 'CREATION SERIES', slug: 'creation' },
+    { id: 'cat-bottle', name: 'BOTTLE SERIES', slug: 'bottle' },
+    { id: 'cat-moctails', name: 'MOCTAILS SERIES', slug: 'moctails' },
+    { id: 'cat-smoothies', name: 'SMOOTHIES LOVER', slug: 'smoothies' },
+    { id: 'cat-tea', name: 'TEA LOVER', slug: 'tea' },
+    { id: 'cat-refreshment', name: 'REFRESHMENT & JUICE', slug: 'refreshment' },
+    { id: 'cat-addons', name: 'ADD ONS', slug: 'addons' },
+    { id: 'cat-pastries', name: 'PASTRIES & CAKE', slug: 'pastries' },
+    { id: 'cat-snack', name: 'SNACK LOVER', slug: 'snack' },
+    { id: 'cat-gultik', name: 'MIE AYAM & GULTIK', slug: 'gultik' },
+    { id: 'cat-kendil', name: 'KENDIL KELANA', slug: 'kendil' }
   ];
 
   for (const cat of categories) {
     await db.collection('categories').doc(cat.id).set(cat);
   }
-  console.log('Database Seeder: Seeded 4 categories');
+  console.log('Database Seeder: Seeded 14 new categories');
 
   // 2. Seed Products
   const products = [
-    // Coffee
-    { id: 'prod-latte', category_id: 'cat-coffee', name: 'Cafe Latte', description: 'Kopi espresso premium dengan susu segar yang di-steam sempurna.', price: 28000, points_cost: 280, points_reward: 28, image_url: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=600', is_available: true },
-    { id: 'prod-aren', category_id: 'cat-coffee', name: 'Kopi Susu Aren Locana', description: 'Kopi susu khas Locana dengan pemanis gula aren alami pilihan.', price: 25000, points_cost: 250, points_reward: 25, image_url: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=600', is_available: true },
-    { id: 'prod-americano', category_id: 'cat-coffee', name: 'Americano', description: 'Dua shot espresso premium dengan air panas, seimbang dan kaya rasa.', price: 22000, points_cost: 220, points_reward: 22, image_url: 'https://images.unsplash.com/photo-1551046713-bc47f9987f09?auto=format&fit=crop&q=80&w=600', is_available: true },
-    { id: 'prod-espresso', category_id: 'cat-coffee', name: 'Espresso Single', description: 'Konsentrat kopi murni dari biji kopi arabika pilihan.', price: 18000, points_cost: 180, points_reward: 18, image_url: 'https://images.unsplash.com/photo-1510707513156-466d22c378f6?auto=format&fit=crop&q=80&w=600', is_available: true },
-    
-    // Non-Coffee
-    { id: 'prod-matcha', category_id: 'cat-non-coffee', name: 'Matcha Latte', description: 'Teh hijau Jepang grade premium dipadukan dengan susu segar.', price: 30000, points_cost: 300, points_reward: 30, image_url: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&q=80&w=600', is_available: true },
-    { id: 'prod-chocolate', category_id: 'cat-non-coffee', name: 'Chocolate Signature', description: 'Cokelat hitam premium pekat yang disajikan hangat atau dingin dengan susu.', price: 28000, points_cost: 280, points_reward: 28, image_url: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=600', is_available: true },
-    { id: 'prod-peachtea', category_id: 'cat-non-coffee', name: 'Iced Peach Tea', description: 'Teh hitam segar rasa buah persik manis dengan potongan buah asli.', price: 20000, points_cost: 200, points_reward: 20, image_url: 'https://images.unsplash.com/photo-1556881286-fc6915169721?auto=format&fit=crop&q=80&w=600', is_available: true },
+    // === BARISTA'S SPECIAL ===
+    { id: 'prod-locana', category_id: 'cat-barista-special', name: 'Locana Coffee', description: 'Kopi susu signature Locana dengan racikan espreso, susu segar, dan gula aren pilihan.', price: 25000, points_cost: 250, image_url: '/data-menu/Locana.jpg', is_available: true },
+    { id: 'prod-chocolate-pistachio', category_id: 'cat-barista-special', name: 'Chocolate Pistachio', description: 'Minuman cokelat premium pekat dipadukan sirup kacang pistachio gurih.', price: 30000, points_cost: 300, image_url: '/data-menu/Chocolate Pistaccio.jpg', is_available: true },
+    { id: 'prod-kiss-of-rubina', category_id: 'cat-barista-special', name: 'Kiss Of Rubina', description: 'Mocktail soda buah berwarna merah delima rasa pomegranate segar.', price: 30000, points_cost: 300, image_url: '/data-menu/Kiss of Rubina.jpg', is_available: true },
+    { id: 'prod-peanut-butter-cream-latte', category_id: 'cat-barista-special', name: 'Peanut Butter Cream Latte', description: 'Kopi susu latte dengan foam krim selai kacang gurih asin melimpah.', price: 30000, points_cost: 300, image_url: '/data-menu/Peanut Butter Cream Latte.jpg', is_available: true },
+    { id: 'prod-white-mocha', category_id: 'cat-barista-special', name: 'White Mocha', description: 'Kopi espresso dengan sirup white chocolate premium dan susu segar hangat.', price: 25000, points_cost: 250, image_url: '/data-menu/White Mocha.jpg', is_available: true },
 
-    // Food
-    { id: 'prod-nasgor', category_id: 'cat-food', name: 'Nasi Goreng Locana', description: 'Nasi goreng bumbu rempah khas Locana, disajikan dengan telur mata sapi dan kerupuk.', price: 35000, points_cost: 350, points_reward: 35, image_url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&q=80&w=600', is_available: true },
-    { id: 'prod-mie', category_id: 'cat-food', name: 'Mie Goreng Jawa', description: 'Mie telur tebal digoreng khas Jawa dengan suwiran ayam, bakso, dan sayuran.', price: 30000, points_cost: 300, points_reward: 30, image_url: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=600', is_available: true },
-    { id: 'prod-geprek', category_id: 'cat-food', name: 'Ayam Geprek Sambal Korek', description: 'Nasi putih dengan ayam goreng tepung renyah yang dimemarkan bersama sambal bawang pedas.', price: 28000, points_cost: 280, points_reward: 28, image_url: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&q=80&w=600', is_available: true },
+    // === COLD BREW SERIES ===
+    { id: 'prod-apple-brew', category_id: 'cat-cold-brew', name: 'Apple Brew', description: 'Espresso dingin khas Locana yang dipadukan dengan sari apel manis segar.', price: 35000, points_cost: 350, image_url: '/data-menu/Apple Brew.jpg', is_available: true },
+    { id: 'prod-mont-blanc', category_id: 'cat-cold-brew', name: 'Mont Blanc', description: 'Dessert manis krim kacang kastanye manis lembut disajikan dingin.', price: 35000, points_cost: 350, image_url: '/data-menu/Mont Blanc.jpg', is_available: true },
+    { id: 'prod-papa-rumba', category_id: 'cat-cold-brew', name: 'Papa Rumba', description: 'Kopi mocktail beraroma rum manis kelapa yang creamy dan menyegarkan.', price: 30000, points_cost: 300, image_url: '/data-menu/Papa Rumba.jpg', is_available: true },
+    { id: 'prod-the-guaranas', category_id: 'cat-cold-brew', name: 'The Guaranas', description: 'Mocktail soda dengan sari buah guarana tropis pemberi energi.', price: 30000, points_cost: 300, image_url: '/data-menu/The Guaranas.jpg', is_available: true },
+    { id: 'prod-los-maria', category_id: 'cat-cold-brew', name: 'Los Maria', description: 'Racikan kopi susu beraroma citrus jeruk segar dan bunga melati lembut.', price: 30000, points_cost: 300, image_url: '/data-menu/Los Maria.jpg', is_available: true },
 
-    // Pastry
-    { id: 'prod-croissant', category_id: 'cat-pastry', name: 'Croissant Butter', description: 'Roti croissant mentega Prancis klasik yang renyah di luar, lembut di dalam.', price: 25000, points_cost: 250, points_reward: 25, image_url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=80&w=600', is_available: true },
-    { id: 'prod-fries', category_id: 'cat-pastry', name: 'French Fries Extra Crispy', description: 'Kentang goreng renyah bumbu bawang garam gurih.', price: 20000, points_cost: 200, points_reward: 20, image_url: 'https://images.unsplash.com/photo-1576107232684-1279f390859f?auto=format&fit=crop&q=80&w=600', is_available: true },
-    { id: 'prod-rotbak', category_id: 'cat-pastry', name: 'Roti Bakar Coklat Keju', description: 'Roti tawar tebal dipanggang dengan mentega, diberi taburan coklat meses dan keju cheddar melimpah.', price: 22000, points_cost: 220, points_reward: 22, image_url: 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&q=80&w=600', is_available: true }
+    // === ESPRESSO BAR ===
+    { id: 'prod-black', category_id: 'cat-espresso-bar', name: 'Black Coffee', description: 'Kopi hitam espresso/americano klasik dari biji kopi arabika pilihan.', price: 20000, points_cost: 200, image_url: '/data-menu/Black.jpg', is_available: true },
+    { id: 'prod-magic', category_id: 'cat-espresso-bar', name: 'Magic', description: 'Double ristretto dipadu susu steam hangat, menghasilkan cita rasa kopi yang intens.', price: 25000, points_cost: 250, image_url: '/data-menu/Magic.jpg', is_available: true },
+    { id: 'prod-white', category_id: 'cat-espresso-bar', name: 'White Coffee', description: 'Flat white / caffe latte klasik dengan tekstur foam susu yang halus.', price: 25000, points_cost: 250, image_url: '/data-menu/White.jpg', is_available: true },
+
+    // === CREATION SERIES ===
+    { id: 'prod-berrycano', category_id: 'cat-creation', name: 'Berry Bee Cano', description: 'Double shot espresso arabika dengan sirup buah beri liar asam segar.', price: 27000, points_cost: 270, image_url: '/data-menu/Berrycano.jpg', is_available: true },
+    { id: 'prod-burnt-butterscotch', category_id: 'cat-creation', name: 'Burnt Butterscotch', description: 'Espresso dengan susu segar dan sirup butterscotch manis gurih karamel bakar.', price: 38000, points_cost: 380, image_url: '/data-menu/Burnt Butterscotch.jpg', is_available: true },
+    { id: 'prod-choco-mellow', category_id: 'cat-creation', name: 'Choco Mellow', description: 'Cokelat hitam premium disajikan dingin dengan marshmallow panggang lembut.', price: 35000, points_cost: 350, image_url: '/data-menu/Choco Mellow.jpg', is_available: true },
+    { id: 'prod-crumble-scotch', category_id: 'cat-creation', name: 'Crumble Scotch', description: 'Kue tart biskuit renyah gurih manis sirup butterscotch caramel.', price: 38000, points_cost: 380, image_url: '/data-menu/Crumble Scotch.jpg', is_available: true },
+    { id: 'prod-ichigo-matcha', category_id: 'cat-creation', name: 'Ichigo Matcha', description: 'Susu matcha latte Jepang dipadukan selai strawberry buah asli buatan rumah.', price: 38000, points_cost: 380, image_url: '/data-menu/Ichigo Matcha.jpg', is_available: true },
+    { id: 'prod-marshmellow-matcha', category_id: 'cat-creation', name: 'Marshmellow Matcha', description: 'Matcha latte Jepang premium dengan topping marshmallow manis lumer.', price: 38000, points_cost: 380, image_url: '/data-menu/Marshmellow Matcha.jpg', is_available: true },
+    { id: 'prod-matcha', category_id: 'cat-creation', name: 'Matcha', description: 'Matcha latte klasik Jepang racikan asli bertekstur kental susu.', price: 30000, points_cost: 300, image_url: '/data-menu/Matcha.jpg', is_available: true },
+
+    // === MOCTAILS SERIES ===
+    { id: 'prod-don-bosco', category_id: 'cat-moctails', name: 'Don Bosco', description: 'Kopi susu creamy premium signature dengan cita rasa hazelnut gurih.', price: 28000, points_cost: 280, image_url: '/data-menu/Don Bosco.jpg', is_available: true },
+
+    // === SMOOTHIES LOVER ===
+    { id: 'prod-mango', category_id: 'cat-smoothies', name: 'Mango', description: 'Minuman mangga smoothies creamy diblender tebal dengan yogurt.', price: 25000, points_cost: 250, image_url: '/data-menu/Mango Smoties.jpg', is_available: true },
+    { id: 'prod-strawberry-jam', category_id: 'cat-smoothies', name: 'Strawberry Jam', description: 'Croissant panggang mentega bertabur selai buah strawberry manis segar.', price: 27000, points_cost: 270, image_url: '/data-menu/Strawberry Jam.jpg', is_available: true },
+
+    // === TEA LOVER ===
+    { id: 'prod-lemon-tea', category_id: 'cat-tea', name: 'Lemon Tea', description: 'Teh segar rasa lemon dengan potongan lemon asli.', price: 25000, points_cost: 250, image_url: '/data-menu/Lemon Tea.jpg', is_available: true },
+    { id: 'prod-lychee-tea', category_id: 'cat-tea', name: 'Lychee Tea', description: 'Teh manis rasa buah leci segar dengan buah leci utuh.', price: 25000, points_cost: 250, image_url: '/data-menu/Lychee Tea.jpg', is_available: true },
+    { id: 'prod-strawberry-tea', category_id: 'cat-tea', name: 'Strawberry Tea', description: 'Teh dingin rasa strawberry segar bertabur potongan strawberry buah asli.', price: 25000, points_cost: 250, image_url: '/data-menu/Strawberry Tea.jpg', is_available: true },
+    { id: 'prod-thai-tea', category_id: 'cat-tea', name: 'Thai Tea', description: 'Teh susu khas Thailand berwarna jingga manis beraroma rempah teh pekat.', price: 25000, points_cost: 250, image_url: '/data-menu/Thai Tea.jpg', is_available: true },
+
+    // === REFRESHMENT & JUICE ===
+    { id: 'prod-es-somboy-kesturi', category_id: 'cat-refreshment', name: 'Es Somboy Kesturi', description: 'Jeruk kesturi peras berpadu manis asin manisan buah kiamboy.', price: 20000, points_cost: 200, image_url: '/data-menu/Es Somboy Kesturi.jpg', is_available: true },
+    { id: 'prod-ice-grassjelly', category_id: 'cat-refreshment', name: 'Ice Grassjelly', description: 'Es susu cincau hitam serut manis dingin menyegarkan.', price: 20000, points_cost: 200, image_url: '/data-menu/Ice Grassjelly.jpg', is_available: true },
+    { id: 'prod-es-limau', category_id: 'cat-refreshment', name: 'Limau', description: 'Es sari jeruk limau nipis segar peras asli asam manis.', price: 22000, points_cost: 220, image_url: '/data-menu/Es Limau.jpg', is_available: true },
+
+    // === ADD ONS ===
+    { id: 'prod-ice-tea-hot-tea', category_id: 'cat-addons', name: 'Ice / Hot Tea', description: 'Teh manis melati seduh klasik khas Locana (es/hangat).', price: 10000, points_cost: 100, image_url: '/data-menu/Ice Tea _ Hot Tea.jpg', is_available: true },
+    { id: 'prod-air-mineral', category_id: 'cat-addons', name: 'Mineral Water 600ml', description: 'Air mineral kemasan botol dingin yang menyegarkan.', price: 10000, points_cost: 100, image_url: '/data-menu/Air Mineral.jpg', is_available: true },
+    { id: 'prod-ice-cream-vanilla', category_id: 'cat-addons', name: 'Ice Cream', description: 'Es krim vanilla premium manis susu alami bertekstur sangat lembut.', price: 7000, points_cost: 70, image_url: '/data-menu/Ice Cream Vanilla.jpg', is_available: true },
+
+    // === PASTRIES & CAKE ===
+    { id: 'prod-mini-croissant-chocolate', category_id: 'cat-pastries', name: 'Mini Croissant Chocolate', description: 'Roti croissant mini isi pasta cokelat hitam manis lumer saat hangat.', price: 15000, points_cost: 150, image_url: '/data-menu/Mini Croissant Chocolate.jpg', is_available: true },
+    { id: 'prod-mini-croissant-peanut', category_id: 'cat-pastries', name: 'Mini Croissant Peanut', description: 'Roti croissant mini dengan isian selai kacang gurih manis bertabur kacang.', price: 15000, points_cost: 150, image_url: '/data-menu/Mini Croissant Peanut.jpg', is_available: true },
+    { id: 'prod-mini-croissant-plain', category_id: 'cat-pastries', name: 'Mini Croissant Plain', description: 'Roti croissant mini polos yang garing renyah dipanggang mentega.', price: 10000, points_cost: 100, image_url: '/data-menu/Mini Croissant Plain.jpg', is_available: true }
   ];
 
   for (const prod of products) {
     await db.collection('products').doc(prod.id).set(prod);
   }
-  console.log('Database Seeder: Seeded/Updated 12 products');
+  console.log('Database Seeder: Seeded/Updated 36 products matched to customer list');
+
 
   if (onlyMenu) {
     console.log('Database Seeder: Products & categories sync completed successfully!');
@@ -106,7 +152,8 @@ async function seedDatabase(onlyMenu = false) {
       role: 'customer',
       name: 'Andi Wijaya',
       phone: '08555666777',
-      loyalty_points: 450, // customer has points
+      birthday: '1995-06-25', // H-2 (Active Birthday Discount)
+      loyalty_points: 450,
       created_at: new Date().toISOString()
     },
     {
@@ -117,7 +164,8 @@ async function seedDatabase(onlyMenu = false) {
       role: 'customer',
       name: 'Siti Rahma',
       phone: '08777888999',
-      loyalty_points: 920, // customer has points
+      birthday: '1998-10-15', // Non-active
+      loyalty_points: 920,
       created_at: new Date().toISOString()
     },
     {
@@ -128,7 +176,8 @@ async function seedDatabase(onlyMenu = false) {
       role: 'customer',
       name: 'Budi Santoso',
       phone: '08999000111',
-      loyalty_points: 120, // customer has points
+      birthday: '2000-06-27', // TODAY (Active Birthday Discount)
+      loyalty_points: 120,
       created_at: new Date().toISOString()
     }
   ];
@@ -190,11 +239,10 @@ async function seedDatabase(onlyMenu = false) {
     const custIndex = Math.floor(Math.random() * customers.length);
     const customer = customers[custIndex];
 
-    // Pick 1 to 4 items
+    // Pick 1 to 3 items
     const itemCount = 1 + Math.floor(Math.random() * 3);
     const items = [];
     let totalPrice = 0;
-    let pointsEarned = 0;
     let pointsRedeemed = 0;
 
     const usedProductIds = new Set();
@@ -207,48 +255,64 @@ async function seedDatabase(onlyMenu = false) {
       usedProductIds.add(p.id);
 
       const qty = 1 + Math.floor(Math.random() * 2);
-      
-      // Determine if redeemed by points (only for members, 10% chance and if they have points cost)
-      const isRedeemed = customer.id && Math.random() < 0.08;
-      
-      if (isRedeemed) {
-        pointsRedeemed += p.points_cost * qty;
+      totalPrice += p.price * qty;
+      items.push({
+        product_id: p.id,
+        name: p.name,
+        quantity: qty,
+        price_per_unit: p.price,
+        notes: Math.random() < 0.2 ? 'Es sedikit' : (Math.random() < 0.2 ? 'Kurang manis' : ''),
+        is_redeemed_by_points: false
+      });
+    }
+
+    // Determine if redeemed a loyalty reward (only for members, 6% chance)
+    if (customer.id && Math.random() < 0.06) {
+      const randReward = Math.random();
+      if (randReward < 0.4) {
+        // Reward A: 25 Pts
+        pointsRedeemed = 25;
         items.push({
-          product_id: p.id,
-          name: p.name,
-          quantity: qty,
+          product_id: 'reward-25',
+          name: 'Gratis Minuman Regular (Redeem 25 Poin)',
+          quantity: 1,
           price_per_unit: 0,
-          notes: Math.random() < 0.3 ? 'Tukar poin' : '',
+          notes: 'Klaim Reward',
+          is_redeemed_by_points: true
+        });
+      } else if (randReward < 0.8) {
+        // Reward B: 50 Pts
+        pointsRedeemed = 50;
+        items.push({
+          product_id: 'reward-50',
+          name: 'Gratis Minuman + Croissant (Redeem 50 Poin)',
+          quantity: 1,
+          price_per_unit: 0,
+          notes: 'Klaim Reward',
           is_redeemed_by_points: true
         });
       } else {
-        totalPrice += p.price * qty;
-        pointsEarned += p.points_reward * qty;
+        // Reward C: 100 Pts
+        pointsRedeemed = 100;
         items.push({
-          product_id: p.id,
-          name: p.name,
-          quantity: qty,
-          price_per_unit: p.price,
-          notes: Math.random() < 0.2 ? 'Es sedikit' : (Math.random() < 0.2 ? 'Kurang manis' : ''),
-          is_redeemed_by_points: false
+          product_id: 'reward-100',
+          name: 'Gratis Minuman Signature 1L (Redeem 100 Poin)',
+          quantity: 1,
+          price_per_unit: 0,
+          notes: 'Klaim Reward',
+          is_redeemed_by_points: true
         });
       }
     }
 
-    if (totalPrice === 0 && pointsRedeemed === 0) {
-      // Fallback
-      const p = products[0];
-      totalPrice = p.price;
-      pointsEarned = p.points_reward;
-      items.push({
-        product_id: p.id,
-        name: p.name,
-        quantity: 1,
-        price_per_unit: p.price,
-        notes: '',
-        is_redeemed_by_points: false
-      });
-    }
+    // Determine point multiplier based on customer tier
+    // In seeder, Budi is Silver (1x), Andi is Gold (1.2x), Siti is Platinum (1.5x)
+    let multiplier = 1.0;
+    if (customer.id === 'user-customer') multiplier = 1.2; // Gold
+    else if (customer.id === 'user-customer2') multiplier = 1.5; // Platinum
+
+    // 1 point for every Rp25,000 spent
+    const pointsEarned = customer.id ? Math.floor(totalPrice / 25000) * multiplier : 0;
 
     const payMethod = paymentMethods[Math.floor(Math.random() * paymentMethods.length)];
     const codeDigits = Math.floor(10000000 + Math.random() * 90000000).toString();
@@ -298,15 +362,13 @@ async function seedDatabase(onlyMenu = false) {
     }
   }
 
-  // Batch insert orders
-  for (const o of generatedOrders) {
-    await db.collection('orders').doc(o.id).set(o);
-  }
+  // Batch insert orders in parallel
+  console.log(`Database Seeder: Uploading ${generatedOrders.length} orders to Cloud Firestore...`);
+  await Promise.all(generatedOrders.map(o => db.collection('orders').doc(o.id).set(o)));
   
-  // Batch insert loyalty transactions
-  for (const l of generatedLoyaltyTx) {
-    await db.collection('loyalty_transactions').doc(l.id).set(l);
-  }
+  // Batch insert loyalty transactions in parallel
+  console.log(`Database Seeder: Uploading ${generatedLoyaltyTx.length} loyalty transactions to Cloud Firestore...`);
+  await Promise.all(generatedLoyaltyTx.map(l => db.collection('loyalty_transactions').doc(l.id).set(l)));
 
   console.log(`Database Seeder: Successfully generated ${generatedOrders.length} historical orders`);
   console.log(`Database Seeder: Successfully generated ${generatedLoyaltyTx.length} loyalty point transactions`);

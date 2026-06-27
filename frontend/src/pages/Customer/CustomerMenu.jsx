@@ -13,10 +13,14 @@ import {
   Store,
   CheckCircle2,
   QrCode,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft,
+  Maximize2,
+  Edit2,
+  FileText
 } from 'lucide-react';
 
-const CustomerMenu = ({ isCartOpen, setIsCartOpen }) => {
+const CustomerMenu = () => {
   const { user, refreshProfile } = useAuth();
   const {
     categories,
@@ -31,14 +35,23 @@ const CustomerMenu = ({ isCartOpen, setIsCartOpen }) => {
 
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [cartNotes, setCartNotes] = useState({});
+  
+  // Navigation & Detail States
+  const [isCheckoutView, setIsCheckoutView] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showFullScreenImage, setShowFullScreenImage] = useState(false);
+  const [itemNote, setItemNote] = useState('');
   const [checkoutNotes, setCheckoutNotes] = useState('');
 
-  // Checkout Modal State
+  // Editing Note State
+  const [editingNoteItem, setEditingNoteItem] = useState(null); // { product_id, is_redeemed_by_points, oldNotes, newNotes }
+
+  // Checkout Modal & Payment State
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [simulatingPayment, setSimulatingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showPaymentSelection, setShowPaymentSelection] = useState(false);
 
   // Totals
   const { totalPrice, totalPointsCost, totalPointsEarned, totalItemsCount } = getCartTotals();
@@ -51,19 +64,53 @@ const CustomerMenu = ({ isCartOpen, setIsCartOpen }) => {
     return matchesCategory && matchesSearch && product.is_available;
   });
 
-  const handleAddToCart = (product, isRedeemed = false) => {
-    const notes = cartNotes[product.id] || '';
-    addToCart(product, 1, notes, isRedeemed);
-    // Reset item input notes
-    setCartNotes(prev => ({ ...prev, [product.id]: '' }));
+  // Suggestions for Checkout (Products not in cart)
+  const suggestions = products
+    .filter(p => !cart.some(item => item.product_id === p.id) && p.is_available)
+    .slice(0, 3);
+
+  const formatIDR = (num) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(num);
+  };
+
+  const handleAddToCartFromCard = (product) => {
+    addToCart(product, 1, '', false);
+  };
+
+  const handleOpenDetail = (product) => {
+    setSelectedProduct(product);
+    setItemNote('');
+  };
+
+  const handleAddFromDetail = () => {
+    if (!selectedProduct) return;
+    addToCart(selectedProduct, 1, itemNote, false);
+    setSelectedProduct(null);
+    setItemNote('');
+  };
+
+  const handleUpdateItemNote = (productId, isRedeemed, oldNote, newNote, quantity) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    // Remove old cart item
+    removeFromCart(productId, isRedeemed, oldNote);
+    
+    // Add new cart item with updated note
+    addToCart(product, quantity, newNote, isRedeemed);
   };
 
   const handleCheckout = async (method) => {
     try {
+      setShowPaymentSelection(false);
       const result = await checkout(method, checkoutNotes);
       setCheckoutResult(result);
       setShowCheckoutModal(true);
-      setIsCartOpen(false);
+      setPaymentSuccess(false);
       setCheckoutNotes('');
     } catch (err) {
       alert(err.message || 'Gagal memproses checkout');
@@ -98,33 +145,410 @@ const CustomerMenu = ({ isCartOpen, setIsCartOpen }) => {
     }
   };
 
-  const formatIDR = (num) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(num);
-  };
+  // RENDER CHECKOUT VIEW
+  if (isCheckoutView) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-6 md:py-8 space-y-6 pb-32">
+        {/* Top Header */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsCheckoutView(false)}
+            className="p-2 rounded-xl hover:bg-stone-100 text-stone-600 transition"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h2 className="text-lg font-bold text-stone-900">Konfirmasi Pesanan</h2>
+        </div>
 
+        {/* Tipe Pemesanan Box */}
+        <div className="rounded-xl border border-orange-200 bg-orange-50/20 p-3.5 flex justify-between items-center text-xs font-bold text-stone-850">
+          <span>Tipe Pemesanan</span>
+          <span className="flex items-center gap-1.5 text-orange-600">
+            Makan di tempat <CheckCircle2 className="h-4.5 w-4.5 fill-orange-100 text-orange-600" />
+          </span>
+        </div>
+
+        {/* Menu Terkait / Suggestions */}
+        {suggestions.length > 0 && (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-stone-900">Menu Terkait</h3>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-none">
+              {suggestions.map(p => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl p-3 min-w-[220px] shadow-xs shrink-0"
+                >
+                  <img src={p.image_url} alt={p.name} className="h-12 w-12 rounded-lg object-cover bg-stone-150" />
+                  <div className="flex-grow min-w-0">
+                    <h4 className="text-xs font-bold text-stone-800 truncate">{p.name}</h4>
+                    <p className="text-[11px] text-stone-500 font-semibold mt-0.5">{formatIDR(p.price)}</p>
+                  </div>
+                  <button
+                    onClick={() => addToCart(p, 1, '', false)}
+                    className="p-1 rounded-full border border-orange-500 text-orange-500 hover:bg-orange-50 transition"
+                  >
+                    <Plus className="h-4.5 w-4.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Item Yang Dipesan Section Header */}
+        <div className="flex items-center justify-between pt-2">
+          <h3 className="text-sm font-bold text-stone-900">
+            Item yang dipesan ({totalItemsCount})
+          </h3>
+          <button
+            onClick={() => setIsCheckoutView(false)}
+            className="rounded-lg border border-orange-500 text-orange-600 hover:bg-orange-50 px-3 py-1.5 text-xs font-bold transition"
+          >
+            + Tambah Item
+          </button>
+        </div>
+
+        {/* Cart Item Cards list */}
+        <div className="space-y-4">
+          {cart.length === 0 ? (
+            <div className="text-center py-12 border border-stone-200 rounded-2xl bg-white space-y-2">
+              <ShoppingBag className="h-8 w-8 text-stone-300 mx-auto" />
+              <p className="text-stone-500 text-xs">Keranjang Anda kosong.</p>
+            </div>
+          ) : (
+            cart.map((item, idx) => (
+              <div
+                key={`${item.product_id}-${item.is_redeemed_by_points}-${idx}`}
+                className="bg-white border border-stone-200 rounded-xl p-4 space-y-3.5 shadow-xs"
+              >
+                {/* Top Row: Name and Ubah Note Button */}
+                <div className="flex justify-between items-start gap-4">
+                  <h4 className="text-sm font-extrabold text-stone-950 leading-tight">{item.name}</h4>
+                  <button
+                    onClick={() => setEditingNoteItem({
+                      product_id: item.product_id,
+                      is_redeemed_by_points: item.is_redeemed_by_points,
+                      oldNotes: item.notes || '',
+                      newNotes: item.notes || '',
+                      quantity: item.quantity
+                    })}
+                    className="rounded-lg border border-stone-250 bg-stone-50/50 hover:bg-stone-50 px-2.5 py-1 text-[10px] font-bold text-stone-700 transition flex items-center gap-1"
+                  >
+                    <Edit2 className="h-3 w-3" /> Ubah
+                  </button>
+                </div>
+
+                {/* Notes Display */}
+                <div className="flex items-center gap-1.5 text-[11px] text-stone-500">
+                  <FileText className="h-3.5 w-3.5 text-stone-400" />
+                  {item.notes ? (
+                    <span className="text-stone-700 font-medium italic">"{item.notes}"</span>
+                  ) : (
+                    <span>Belum menambah catatan</span>
+                  )}
+                </div>
+
+                {/* Price and Quantity Selector Row */}
+                <div className="flex justify-between items-center pt-2 border-t border-stone-100">
+                  <span className="text-xs font-bold text-stone-900">
+                    {item.is_redeemed_by_points ? 'Redeem Poin' : formatIDR(item.price_per_unit)}
+                  </span>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => updateCartQty(item.product_id, item.is_redeemed_by_points, item.notes, item.quantity - 1)}
+                      className="p-1.5 rounded-lg border border-stone-250 hover:bg-stone-100 text-stone-600 transition"
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="text-xs font-extrabold text-stone-800 w-5 text-center">
+                      {item.quantity}
+                    </span>
+                    <button
+                      onClick={() => updateCartQty(item.product_id, item.is_redeemed_by_points, item.notes, item.quantity + 1)}
+                      className="p-1.5 rounded-lg border border-stone-250 hover:bg-stone-100 text-stone-600 transition"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Tambah Catatan Lainnya (Global) */}
+        {cart.length > 0 && (
+          <div className="bg-white border border-stone-200 rounded-xl p-3 flex items-center gap-3 shadow-xs">
+            <Edit2 className="h-4.5 w-4.5 text-stone-500 shrink-0" />
+            <input
+              type="text"
+              value={checkoutNotes}
+              onChange={(e) => setCheckoutNotes(e.target.value)}
+              placeholder="Tambah catatan lainnya"
+              className="w-full text-xs text-stone-850 placeholder-stone-500 outline-none bg-transparent"
+            />
+          </div>
+        )}
+
+        {/* Rincian Pembayaran Card */}
+        {cart.length > 0 && (
+          <div className="bg-white border border-stone-200 rounded-2xl p-5 shadow-xs space-y-4">
+            <h4 className="text-xs font-bold text-stone-900 uppercase tracking-wider text-center">
+              Rincian Pembayaran
+            </h4>
+            <div className="space-y-2.5 text-xs text-stone-600 pt-2">
+              <div className="flex justify-between">
+                <span>Subtotal ({totalItemsCount} menu)</span>
+                <span className="font-semibold text-stone-850">{formatIDR(totalPrice)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Biaya Layanan</span>
+                <span className="font-semibold text-stone-850">{formatIDR(1000)}</span>
+              </div>
+              <div className="flex justify-between border-t border-stone-100 pt-3 text-sm font-extrabold text-stone-900">
+                <span>Total</span>
+                <span className="text-orange-600">{formatIDR(totalPrice + 1000)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fixed Bottom Action Panel */}
+        {cart.length > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-stone-200 shadow-[0_-8px_30px_rgb(0,0,0,0.08)] p-4 md:px-8">
+            <div className="mx-auto max-w-2xl flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] text-stone-500 font-bold uppercase tracking-wider">Total Pembayaran</p>
+                <p className="text-lg font-black text-orange-600">{formatIDR(totalPrice + 1000)}</p>
+              </div>
+              <button
+                onClick={() => setShowPaymentSelection(true)}
+                className="btn-transition rounded-xl bg-orange-600 hover:bg-orange-700 px-6 py-3 text-xs font-bold text-white shadow-md shadow-orange-600/10 flex items-center gap-1.5 shrink-0"
+              >
+                <span>Lanjut Pembayaran</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Selection Modal */}
+        {showPaymentSelection && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-xs" onClick={() => setShowPaymentSelection(false)} />
+            <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl z-10 animate-slide-up space-y-4">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-2.5">
+                <span className="text-xs font-bold text-stone-800 uppercase tracking-wider">Pilih Metode Pembayaran</span>
+                <button onClick={() => setShowPaymentSelection(false)} className="text-stone-400 hover:text-stone-600">
+                  <X className="h-4.5 w-4.5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-2.5">
+                <button
+                  onClick={() => handleCheckout('online_qris')}
+                  className="w-full flex items-center gap-3 p-3.5 border border-stone-200 hover:border-orange-500 rounded-xl bg-stone-50 hover:bg-orange-50/10 transition text-left"
+                >
+                  <QrCode className="h-5 w-5 text-orange-600" />
+                  <div>
+                    <h5 className="text-xs font-bold text-stone-800">Bayar Online (QRIS)</h5>
+                    <p className="text-[10px] text-stone-500 mt-0.5">Konfirmasi instant lewat simulator QR code</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => handleCheckout('cashier')}
+                  className="w-full flex items-center gap-3 p-3.5 border border-stone-200 hover:border-orange-500 rounded-xl bg-stone-50 hover:bg-orange-50/10 transition text-left"
+                >
+                  <Store className="h-5 w-5 text-stone-700" />
+                  <div>
+                    <h5 className="text-xs font-bold text-stone-800">Bayar di Kasir</h5>
+                    <p className="text-[10px] text-stone-500 mt-0.5">Dapatkan kode bayar untuk ditunjukkan ke Kasir</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Checkout Results Modal */}
+        {showCheckoutModal && checkoutResult && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-xs" onClick={() => { if (paymentSuccess || checkoutResult.order.payment_method === 'cashier') { setShowCheckoutModal(false); setIsCheckoutView(false); } }} />
+
+            <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-2xl z-10 animate-slide-up">
+              {checkoutResult.order.payment_method === 'online_qris' ? (
+                <div className="text-center">
+                  {paymentSuccess ? (
+                    <div className="py-6 space-y-4">
+                      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                        <CheckCircle2 className="h-8 w-8" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-stone-900">Pembayaran Online Sukses!</h3>
+                        <p className="text-stone-500 text-xs mt-1">Pesanan Anda telah didistribusikan ke Kasir & Dapur.</p>
+                      </div>
+                      <div className="rounded-xl bg-stone-50 p-4 text-left border border-stone-150 space-y-2 mt-4">
+                        <div className="flex justify-between text-xs text-stone-600">
+                          <span>Nomor Pesanan</span>
+                          <span className="font-bold text-stone-900">{checkoutResult.order.order_number}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-stone-600">
+                          <span>Status Pengerjaan</span>
+                          <span className="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Sedang Disiapkan</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => { setShowCheckoutModal(false); setIsCheckoutView(false); }}
+                        className="btn-transition w-full rounded-xl bg-amber-600 hover:bg-amber-700 py-3 text-sm font-bold text-white shadow-md shadow-amber-600/10 mt-6"
+                      >
+                        Selesai
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                        <span className="text-sm font-bold text-stone-900 text-left">Pembayaran QRIS Midtrans</span>
+                        <button onClick={() => { setShowCheckoutModal(false); }} className="text-stone-400 hover:text-stone-600">
+                          <X className="h-5 w-5" />
+                        </button>
+                      </div>
+                      <div className="py-2">
+                        <p className="text-xs text-stone-500">Scan kode QRIS di bawah ini untuk membayar:</p>
+                        <h4 className="text-xl font-extrabold text-stone-900 mt-1">{formatIDR(checkoutResult.order.total_price)}</h4>
+                      </div>
+                      <div className="mx-auto flex h-52 w-52 items-center justify-center rounded-xl bg-stone-50 p-3 border border-stone-200">
+                        <img src={checkoutResult.qris_url} alt="QRIS QR Code" className="h-full w-full object-contain" />
+                      </div>
+                      <div className="rounded-xl bg-amber-50 border border-amber-200/50 p-3 text-left flex items-start gap-2.5">
+                        <AlertCircle className="h-4.5 w-4.5 text-amber-700 shrink-0 mt-0.5" />
+                        <div className="text-[11px] text-amber-800 leading-normal">
+                          <strong>Simulasi Demo:</strong> Klik tombol di bawah ini untuk menyimulasikan notifikasi sukses pembayaran QRIS.
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleSimulatePayment}
+                        disabled={simulatingPayment}
+                        className="btn-transition w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/10"
+                      >
+                        {simulatingPayment ? 'Memverifikasi...' : 'Simulasikan Pembayaran Berhasil'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center space-y-4">
+                  <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                    <span className="text-sm font-bold text-stone-900">Pemesanan Bayar di Kasir</span>
+                    <button onClick={() => { setShowCheckoutModal(false); setIsCheckoutView(false); }} className="text-stone-400 hover:text-stone-600">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="py-2">
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600">Kode Unik Transaksi</span>
+                    <h3 className="text-3xl font-extrabold text-stone-900 tracking-wider mt-1">{checkoutResult.order.order_number}</h3>
+                    <p className="text-xs text-stone-500 mt-2">Harap tunjukkan kode di atas kepada Kasir untuk menyelesaikan pembayaran.</p>
+                  </div>
+                  <div className="mx-auto border border-stone-200 rounded-xl p-4 bg-stone-50 flex flex-col items-center justify-center w-64">
+                    <div className="flex h-10 w-full items-stretch justify-center gap-0.5 overflow-hidden opacity-85">
+                      {Array(25).fill(0).map((_, i) => (
+                        <div
+                          key={i}
+                          className="bg-stone-900"
+                          style={{ width: `${(i % 3 === 0) ? '4px' : ((i % 4 === 0) ? '1px' : '2px')}` }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] font-mono tracking-widest text-stone-500 mt-1">{checkoutResult.order.id}</span>
+                  </div>
+                  <button
+                    onClick={() => { setShowCheckoutModal(false); setIsCheckoutView(false); }}
+                    className="btn-transition w-full rounded-xl bg-stone-800 hover:bg-stone-900 py-3 text-sm font-bold text-white"
+                  >
+                    Tutup & Simpan Kode
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Inline Note Editor Modal */}
+        {editingNoteItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-xs" onClick={() => setEditingNoteItem(null)} />
+            <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl z-10 space-y-4">
+              <h4 className="text-xs font-bold text-stone-800 uppercase tracking-wider">Ubah Catatan Khusus</h4>
+              <textarea
+                value={editingNoteItem.newNotes}
+                onChange={e => setEditingNoteItem({ ...editingNoteItem, newNotes: e.target.value })}
+                placeholder="Contoh: Es sedikit, manis sedang..."
+                className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs text-stone-800 outline-none focus:border-amber-500 bg-stone-50/50 resize-none h-20"
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingNoteItem(null)}
+                  className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs text-stone-600 hover:bg-stone-50"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleUpdateItemNote(
+                      editingNoteItem.product_id,
+                      editingNoteItem.is_redeemed_by_points,
+                      editingNoteItem.oldNotes,
+                      editingNoteItem.newNotes,
+                      editingNoteItem.quantity
+                    );
+                    setEditingNoteItem(null);
+                  }}
+                  className="rounded-lg bg-orange-600 text-white px-4 py-1.5 text-xs font-bold"
+                >
+                  Simpan
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // RENDER CUSTOMER MENU / GRID VIEW
   return (
-    <div className="mx-auto max-w-7xl px-4 py-6 md:px-8">
-
+    <div className="mx-auto max-w-7xl px-4 py-6 md:px-8 pb-32">
+      
       {/* Header Banner */}
-      <div className="mb-8 rounded-2xl bg-amber-950 p-6 text-white shadow-xl shadow-stone-900/10 flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
+      <div className="mb-6 rounded-2xl bg-amber-950 p-6 text-white shadow-xl shadow-stone-900/10 flex flex-col md:flex-row md:items-center justify-between gap-4 relative overflow-hidden">
         <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-amber-900/25 blur-xl"></div>
         <div className="z-10">
-          <span className="text-xs font-bold uppercase tracking-widest text-amber-500">Cafe Favoritmu</span>
+          <span className="text-xs font-bold uppercase tracking-widest text-amber-500 font-mono">Cafe Locana</span>
           <h2 className="text-2xl font-bold md:text-3xl mt-1">Locana Menu</h2>
           <p className="text-stone-400 text-sm mt-1 max-w-md">Nikmati kopi premium dan makanan lezat pilihan kami langsung di meja Anda.</p>
         </div>
         {user?.role === 'customer' && (
-          <div className="z-10 bg-amber-900/40 rounded-xl p-4 border border-amber-800/40 flex items-center gap-3 shrink-0 self-start md:self-center">
-            <div className="bg-amber-600 p-2.5 rounded-lg">
-              <Star className="h-5 w-5 fill-white stroke-none" />
+          <div className="z-10 bg-amber-900/40 rounded-xl p-4 border border-amber-800/40 flex items-center gap-4 shrink-0 self-start md:self-center">
+            <div className="bg-amber-600 p-2.5 rounded-lg shadow-sm">
+              <Star className="h-5 w-5 fill-white stroke-none animate-pulse-slow" />
             </div>
             <div>
-              <p className="text-xs text-amber-300 font-medium uppercase tracking-wider">Loyalty Member</p>
-              <p className="text-lg font-extrabold text-white">{user.loyalty_points || 0} Poin</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-amber-300 font-extrabold uppercase tracking-wider">Loyalty Member</p>
+                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                  user.membership_tier === 'Platinum'
+                    ? 'bg-purple-900/60 text-purple-200 border-purple-500'
+                    : user.membership_tier === 'Gold'
+                    ? 'bg-amber-900/80 text-amber-200 border-amber-500'
+                    : 'bg-stone-800 text-stone-300 border-stone-600'
+                }`}>
+                  {user.membership_tier || 'Silver'}
+                </span>
+              </div>
+              <p className="text-lg font-black text-white">{user.loyalty_points || 0} Poin</p>
+              {user.points_expiration_date && (
+                <p className="text-[9px] text-stone-400 mt-0.5">Exp: {user.points_expiration_date}</p>
+              )}
             </div>
           </div>
         )}
@@ -132,7 +556,7 @@ const CustomerMenu = ({ isCartOpen, setIsCartOpen }) => {
 
       {/* Menu Actions: Search & Categories */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-
+        
         {/* Categories Tab */}
         <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none shrink-0">
           <button
@@ -171,392 +595,193 @@ const CustomerMenu = ({ isCartOpen, setIsCartOpen }) => {
         </div>
       </div>
 
-      {/* Products Grid */}
+      {/* Products Grid (Polosan) */}
       {filteredProducts.length === 0 ? (
         <div className="my-12 text-center">
           <p className="text-stone-500">Menu tidak ditemukan. Coba kata kunci lain.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filteredProducts.map(product => {
-            const hasEnoughPoints = user && product.points_cost > 0 && user.loyalty_points >= product.points_cost;
+            const cartItem = cart.find(item => item.product_id === product.id && !item.is_redeemed_by_points);
+            const qtyInCart = cartItem ? cartItem.quantity : 0;
 
             return (
-              <div key={product.id} className="btn-transition flex flex-col overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm hover:shadow-md hover-scale">
-
+              <div
+                key={product.id}
+                onClick={() => handleOpenDetail(product)}
+                className="btn-transition flex flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-xs hover:shadow-md cursor-pointer hover-scale"
+              >
                 {/* Product Image */}
-                <div className="relative h-44 w-full bg-stone-100">
+                <div className="relative h-36 sm:h-44 w-full bg-stone-100">
                   <img
                     src={product.image_url}
                     alt={product.name}
                     className="h-full w-full object-cover"
                     loading="lazy"
                   />
-                  {product.points_reward > 0 && (
-                    <div className="absolute top-3 left-3 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm flex items-center gap-1 backdrop-blur-xs">
-                      <Star className="h-3 w-3 fill-white stroke-none" />
-                      <span>+{product.points_reward} Poin</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Product Info */}
-                <div className="flex flex-grow flex-col p-4">
-                  <h3 className="font-bold text-stone-900 leading-snug">{product.name}</h3>
-                  <p className="mt-1 text-xs text-stone-500 line-clamp-2 flex-grow">{product.description}</p>
-
-                  {/* Note Input per Product */}
-                  <div className="mt-3">
-                    <input
-                      type="text"
-                      placeholder="Catatan khusus (es dikit, dll)..."
-                      value={cartNotes[product.id] || ''}
-                      onChange={(e) => setCartNotes({ ...cartNotes, [product.id]: e.target.value })}
-                      className="w-full rounded-lg border border-stone-200/80 px-2.5 py-1.5 text-[11px] text-stone-700 outline-none focus:border-amber-500 bg-stone-50"
-                    />
+                <div className="p-3 flex flex-col flex-grow justify-between">
+                  <div>
+                    <h3 className="font-bold text-stone-900 leading-snug text-xs sm:text-sm line-clamp-1">{product.name}</h3>
                   </div>
 
-                  {/* Price & Action Buttons */}
-                  <div className="mt-4 flex flex-col gap-2 pt-3 border-t border-stone-100">
-                    <div className="flex items-center justify-between">
-                      <span className="text-base font-bold text-stone-900">{formatIDR(product.price)}</span>
-                      {product.points_cost > 0 && (
-                        <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md flex items-center gap-0.5 border border-amber-100">
-                          {product.points_cost} Pts
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-1.5 mt-1">
+                  {/* Price & Action Button Row */}
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="text-xs sm:text-sm font-extrabold text-stone-900">
+                      {formatIDR(product.price)}
+                    </span>
+                    
+                    {qtyInCart === 0 ? (
                       <button
-                        onClick={() => handleAddToCart(product, false)}
-                        className="btn-transition rounded-xl bg-amber-600 hover:bg-amber-700 px-3 py-2 text-xs font-bold text-white shadow-xs flex items-center justify-center gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddToCartFromCard(product);
+                        }}
+                        className="rounded-lg bg-orange-600 hover:bg-orange-700 px-3 py-1.5 text-[11px] font-bold text-white shadow-xs"
                       >
-                        <Plus className="h-3.5 w-3.5" /> Beli
+                        Tambah
                       </button>
-
-                      {/* Loyalty Redeem Button (visible only to logged-in customers with enough points) */}
-                      {user?.role === 'customer' && product.points_cost > 0 && (
+                    ) : (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-2 border border-orange-200 rounded-lg bg-orange-50/50 px-1.5 py-1"
+                      >
                         <button
-                          onClick={() => handleAddToCart(product, true)}
-                          disabled={!hasEnoughPoints}
-                          className={`btn-transition rounded-xl px-3 py-2 text-xs font-bold border transition flex items-center justify-center gap-1 ${hasEnoughPoints
-                              ? 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200'
-                              : 'bg-stone-50 text-stone-400 border-stone-200 cursor-not-allowed'
-                            }`}
+                          onClick={() => updateCartQty(product.id, false, cartItem.notes, qtyInCart - 1)}
+                          className="p-0.5 rounded hover:bg-orange-100 text-orange-600"
                         >
-                          <Star className="h-3.5 w-3.5 fill-current" /> Tukar Poin
+                          <Minus className="h-3 w-3" />
                         </button>
-                      )}
-                    </div>
+                        <span className="text-[11px] font-extrabold text-orange-700 w-3 text-center">
+                          {qtyInCart}
+                        </span>
+                        <button
+                          onClick={() => updateCartQty(product.id, false, cartItem.notes, qtyInCart + 1)}
+                          className="p-0.5 rounded hover:bg-orange-100 text-orange-600"
+                        >
+                          <Plus className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Cart Drawer Overlay & Sidebar */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop */}
-          <div
-            onClick={() => setIsCartOpen(false)}
-            className="absolute inset-0 bg-stone-900/40 backdrop-blur-xs"
-          />
+      {/* Floating Bottom Cart Popup/Bar */}
+      {totalItemsCount > 0 && (
+        <div className="fixed bottom-4 left-4 right-4 z-40 bg-white border border-stone-200 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-4 max-w-xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative bg-orange-100 text-orange-600 p-2.5 rounded-xl">
+              <ShoppingBag className="h-5 w-5" />
+              <span className="absolute -top-1.5 -right-1.5 bg-orange-600 text-white text-[9px] font-black rounded-full h-5 w-5 flex items-center justify-center border-2 border-white">
+                {totalItemsCount}
+              </span>
+            </div>
+            <div>
+              <p className="text-[10px] text-stone-500 font-bold uppercase tracking-wider">Total Pesanan</p>
+              <p className="text-base font-black text-stone-900">{formatIDR(totalPrice)}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsCheckoutView(true)}
+            className="rounded-xl bg-orange-600 hover:bg-orange-700 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-orange-600/15"
+          >
+            Checkout ({totalItemsCount})
+          </button>
+        </div>
+      )}
 
-          {/* Drawer Panel */}
-          <div className="relative flex h-full w-full max-w-md flex-col bg-white shadow-2xl animate-slide-up">
-
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between border-b border-stone-200 px-5 py-4">
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="h-5 w-5 text-amber-600" />
-                <h3 className="text-lg font-bold text-stone-900">Keranjang Belanja</h3>
-                <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-semibold text-stone-600">
-                  {totalItemsCount}
-                </span>
-              </div>
+      {/* ===== Product Detail Modal ===== */}
+      {selectedProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-xs" onClick={() => setSelectedProduct(null)} />
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl z-10 animate-slide-up flex flex-col max-h-[90vh]">
+            
+            {/* Image section with full screen view button */}
+            <div className="relative h-64 bg-stone-100 shrink-0">
+              <img
+                src={selectedProduct.image_url}
+                alt={selectedProduct.name}
+                className="h-full w-full object-cover"
+              />
               <button
-                onClick={() => setIsCartOpen(false)}
-                className="btn-transition rounded-lg p-1.5 hover:bg-stone-100 text-stone-500"
+                onClick={() => setShowFullScreenImage(true)}
+                className="absolute bottom-3 right-3 bg-stone-900/70 backdrop-blur-xs text-white p-2.5 rounded-xl hover:bg-stone-900/90 transition shadow-sm"
+                title="Lihat Ukuran Penuh"
+              >
+                <Maximize2 className="h-4.5 w-4.5" />
+              </button>
+              <button
+                onClick={() => setSelectedProduct(null)}
+                className="absolute top-3 right-3 bg-white/80 backdrop-blur-xs text-stone-700 p-1.5 rounded-xl hover:bg-white transition shadow-sm"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Drawer Items list */}
-            <div className="flex-grow overflow-y-auto px-5 py-4 space-y-4">
-              {cart.length === 0 ? (
-                <div className="flex h-64 flex-col items-center justify-center text-center">
-                  <ShoppingBag className="h-10 w-10 text-stone-300 mb-2" />
-                  <p className="text-stone-500 text-sm">Keranjang Anda masih kosong.</p>
+            {/* Scrollable details */}
+            <div className="p-5 flex-grow overflow-y-auto space-y-4">
+              <div>
+                <h3 className="text-lg font-black text-stone-900 leading-snug">{selectedProduct.name}</h3>
+                <p className="text-base font-extrabold text-orange-600 mt-1">{formatIDR(selectedProduct.price)}</p>
+              </div>
+
+              {selectedProduct.description && (
+                <div className="space-y-1">
+                  <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Deskripsi</h4>
+                  <p className="text-xs text-stone-600 leading-relaxed">{selectedProduct.description}</p>
                 </div>
-              ) : (
-                cart.map((item, idx) => (
-                  <div key={`${item.product_id}-${item.is_redeemed_by_points}-${idx}`} className="flex gap-3 border-b border-stone-100 pb-4">
-                    <img
-                      src={item.image_url}
-                      alt={item.name}
-                      className="h-16 w-16 rounded-xl object-cover bg-stone-100 shrink-0"
-                    />
-                    <div className="flex-grow min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="font-bold text-sm text-stone-900 truncate">{item.name}</h4>
-                        <button
-                          onClick={() => removeFromCart(item.product_id, item.is_redeemed_by_points, item.notes)}
-                          className="text-stone-400 hover:text-red-600 transition"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-
-                      {/* Price / Points tag */}
-                      <p className="text-xs mt-0.5 font-semibold">
-                        {item.is_redeemed_by_points ? (
-                          <span className="text-amber-700 flex items-center gap-0.5">
-                            <Star className="h-3 w-3 fill-amber-500 stroke-none" /> {item.points_cost} Poin (Redeem)
-                          </span>
-                        ) : (
-                          <span className="text-stone-700">{formatIDR(item.price_per_unit)}</span>
-                        )}
-                      </p>
-
-                      {/* Display note if any */}
-                      {item.notes && (
-                        <p className="text-[10px] text-amber-600 font-medium italic mt-1 bg-amber-50/50 px-2 py-0.5 rounded-md inline-block">
-                          Note: "{item.notes}"
-                        </p>
-                      )}
-
-                      {/* Quantity Controller */}
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() => updateCartQty(item.product_id, item.is_redeemed_by_points, item.notes, item.quantity - 1)}
-                          className="btn-transition rounded-md border border-stone-200 p-1 hover:bg-stone-50 text-stone-600"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="text-xs font-bold text-stone-800 w-5 text-center">{item.quantity}</span>
-                        <button
-                          onClick={() => updateCartQty(item.product_id, item.is_redeemed_by_points, item.notes, item.quantity + 1)}
-                          className="btn-transition rounded-md border border-stone-200 p-1 hover:bg-stone-50 text-stone-600"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
               )}
+
+              {/* Special Note Input */}
+              <div className="space-y-1.5 pt-2 border-t border-stone-100">
+                <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                  Catatan Khusus (Opsional)
+                </label>
+                <textarea
+                  value={itemNote}
+                  onChange={e => setItemNote(e.target.value)}
+                  placeholder="Contoh: Es sedikit, gula aren dikit, no whip cream..."
+                  className="w-full rounded-xl border border-stone-200 px-3 py-2.5 text-xs text-stone-800 outline-none focus:border-amber-500 bg-stone-50 resize-none h-20"
+                />
+              </div>
             </div>
 
-            {/* Drawer Footer / Summary */}
-            {cart.length > 0 && (
-              <div className="border-t border-stone-200 bg-stone-50 p-5 space-y-4">
-
-                {/* Checkout Custom Notes */}
-                <div>
-                  <label className="text-xs font-semibold text-stone-600">Catatan Tambahan Pesanan (Opsional)</label>
-                  <input
-                    type="text"
-                    value={checkoutNotes}
-                    onChange={(e) => setCheckoutNotes(e.target.value)}
-                    placeholder="Contoh: Nomor meja 5, sendok garpu..."
-                    className="w-full mt-1.5 rounded-xl border border-stone-300 bg-white px-3 py-2 text-xs text-stone-800 outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                {/* Calculations */}
-                <div className="space-y-1.5 text-xs text-stone-600 border-t border-stone-200/60 pt-3">
-                  {totalPointsCost > 0 && (
-                    <div className="flex justify-between text-amber-700 font-semibold">
-                      <span>Total Poin Ditukar</span>
-                      <span className="flex items-center gap-0.5">
-                        <Star className="h-3 w-3 fill-amber-500 stroke-none" /> {totalPointsCost} Pts
-                      </span>
-                    </div>
-                  )}
-                  {totalPointsEarned > 0 && (
-                    <div className="flex justify-between text-emerald-700 font-semibold">
-                      <span>Poin yang Didapat</span>
-                      <span>+{totalPointsEarned} Pts</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t border-stone-200/60 pt-2 text-sm font-bold text-stone-900">
-                    <span>Total Pembayaran</span>
-                    <span>{formatIDR(totalPrice)}</span>
-                  </div>
-                </div>
-
-                {/* Checkout buttons */}
-                <div className="grid grid-cols-2 gap-3.5 pt-2">
-                  <button
-                    onClick={() => handleCheckout('online_qris')}
-                    className="btn-transition rounded-xl bg-amber-600 hover:bg-amber-700 py-3 text-xs font-bold text-white shadow-md shadow-amber-600/10 flex flex-col items-center justify-center gap-1"
-                  >
-                    <QrCode className="h-4.5 w-4.5" />
-                    <span>Bayar Online (QRIS)</span>
-                  </button>
-                  <button
-                    onClick={() => handleCheckout('cashier')}
-                    className="btn-transition rounded-xl bg-stone-800 hover:bg-stone-900 py-3 text-xs font-bold text-white shadow-md shadow-stone-800/10 flex flex-col items-center justify-center gap-1"
-                  >
-                    <Store className="h-4.5 w-4.5" />
-                    <span>Bayar di Kasir</span>
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* CTA add button */}
+            <div className="p-4 border-t border-stone-100 bg-stone-50/50 flex justify-end shrink-0">
+              <button
+                onClick={handleAddFromDetail}
+                className="rounded-xl bg-orange-600 hover:bg-orange-700 px-6 py-3 text-xs font-bold text-white shadow-md shadow-orange-600/10 flex items-center gap-1.5"
+              >
+                <span>Tambah ke Orderan</span>
+              </button>
+            </div>
 
           </div>
         </div>
       )}
 
-      {/* Checkout Results Modal */}
-      {showCheckoutModal && checkoutResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-xs" onClick={() => { if (paymentSuccess || checkoutResult.order.payment_method === 'cashier') setShowCheckoutModal(false); }} />
-
-          <div className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white p-6 shadow-2xl z-10 animate-slide-up">
-
-            {/* QRIS Online Checkout view */}
-            {checkoutResult.order.payment_method === 'online_qris' ? (
-              <div className="text-center">
-                {paymentSuccess ? (
-                  <div className="py-6 space-y-4">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                      <CheckCircle2 className="h-8 w-8" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-stone-900">Pembayaran Online Sukses!</h3>
-                      <p className="text-stone-500 text-xs mt-1">Pesanan Anda telah didistribusikan ke Kasir & Dapur.</p>
-                    </div>
-
-                    <div className="rounded-xl bg-stone-50 p-4 text-left border border-stone-150 space-y-2 mt-4">
-                      <div className="flex justify-between text-xs text-stone-600">
-                        <span>Nomor Pesanan</span>
-                        <span className="font-bold text-stone-900">{checkoutResult.order.order_number}</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-stone-600">
-                        <span>Status Pengerjaan</span>
-                        <span className="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Sedang Disiapkan</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setShowCheckoutModal(false)}
-                      className="btn-transition w-full rounded-xl bg-amber-600 hover:bg-amber-700 py-3 text-sm font-bold text-white shadow-md shadow-amber-600/10 mt-6"
-                    >
-                      Selesai
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                      <span className="text-sm font-bold text-stone-900 text-left">Pembayaran QRIS Midtrans</span>
-                      <button
-                        onClick={() => setShowCheckoutModal(false)}
-                        className="text-stone-400 hover:text-stone-600"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-
-                    <div className="py-2">
-                      <p className="text-xs text-stone-500">Scan kode QRIS di bawah ini untuk membayar:</p>
-                      <h4 className="text-xl font-extrabold text-stone-900 mt-1">{formatIDR(checkoutResult.order.total_price)}</h4>
-                    </div>
-
-                    {/* QR Code image mock */}
-                    <div className="mx-auto flex h-52 w-52 items-center justify-center rounded-xl bg-stone-50 p-3 border border-stone-200">
-                      <img
-                        src={checkoutResult.qris_url}
-                        alt="QRIS QR Code"
-                        className="h-full w-full object-contain"
-                      />
-                    </div>
-
-                    <div className="rounded-xl bg-amber-50 border border-amber-200/50 p-3 text-left flex items-start gap-2.5">
-                      <AlertCircle className="h-4.5 w-4.5 text-amber-700 shrink-0 mt-0.5" />
-                      <div className="text-[11px] text-amber-800 leading-normal">
-                        <strong>Simulasi Demo:</strong> Pada fase prototipe ini, Anda dapat menyimulasikan pembayaran selesai instan dengan menekan tombol simulasi di bawah.
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleSimulatePayment}
-                      disabled={simulatingPayment}
-                      className="btn-transition w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 py-3 text-sm font-bold text-white shadow-md shadow-emerald-600/10"
-                    >
-                      {simulatingPayment ? 'Memverifikasi...' : 'Simulasikan Pembayaran Berhasil'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              /* Pay at Cashier Checkout view */
-              <div className="text-center space-y-4">
-                <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-                  <span className="text-sm font-bold text-stone-900">Pemesanan Bayar di Kasir</span>
-                  <button
-                    onClick={() => setShowCheckoutModal(false)}
-                    className="text-stone-400 hover:text-stone-600"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-
-                <div className="py-2">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-amber-600">Kode Unik Transaksi</span>
-                  <h3 className="text-3xl font-extrabold text-stone-900 tracking-wider mt-1">{checkoutResult.order.order_number}</h3>
-                  <p className="text-xs text-stone-500 mt-2">Harap tunjukkan kode di atas kepada Kasir untuk menyelesaikan pembayaran.</p>
-                </div>
-
-                {/* Simulated Barcode */}
-                <div className="mx-auto border border-stone-200 rounded-xl p-4 bg-stone-50 flex flex-col items-center justify-center w-64">
-                  {/* Mock Barcode sticks */}
-                  <div className="flex h-10 w-full items-stretch justify-center gap-0.5 overflow-hidden opacity-85">
-                    {Array(25).fill(0).map((_, i) => (
-                      <div
-                        key={i}
-                        className="bg-stone-900"
-                        style={{ width: `${(i % 3 === 0) ? '4px' : ((i % 4 === 0) ? '1px' : '2px')}` }}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[10px] font-mono tracking-widest text-stone-500 mt-1">{checkoutResult.order.id}</span>
-                </div>
-
-                <div className="rounded-xl bg-stone-50 p-4 text-left border border-stone-150 space-y-2.5 text-xs text-stone-600">
-                  <div className="flex justify-between">
-                    <span>Total Pembayaran</span>
-                    <span className="font-bold text-stone-900">{formatIDR(checkoutResult.order.total_price)}</span>
-                  </div>
-                  {checkoutResult.order.points_redeemed > 0 && (
-                    <div className="flex justify-between text-amber-700">
-                      <span>Poin Ditukarkan</span>
-                      <span>{checkoutResult.order.points_redeemed} Pts</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Status Transaksi</span>
-                    <span className="font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded">Belum Dibayar</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setShowCheckoutModal(false)}
-                  className="btn-transition w-full rounded-xl bg-stone-800 hover:bg-stone-900 py-3 text-sm font-bold text-white"
-                >
-                  Tutup & Simpan Kode
-                </button>
-              </div>
-            )}
-
-          </div>
+      {/* ===== Full Screen Image Modal ===== */}
+      {showFullScreenImage && selectedProduct && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-stone-950/95 backdrop-blur-xs p-4">
+          <button
+            onClick={() => setShowFullScreenImage(false)}
+            className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white p-2.5 rounded-full transition"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img
+            src={selectedProduct.image_url}
+            alt={selectedProduct.name}
+            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+          />
         </div>
       )}
 

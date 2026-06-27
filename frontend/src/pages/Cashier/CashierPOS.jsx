@@ -326,6 +326,11 @@ const CashierPOS = () => {
                       <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Detail Pesanan</span>
                       <h3 className="text-2xl font-black text-stone-900 tracking-wider mt-0.5">{selectedOrder.order_number}</h3>
                       <p className="text-xs text-stone-500 mt-1">Pelanggan: {selectedOrder.customer_name}</p>
+                      {selectedOrder.notes && (
+                        <div className="mt-2 rounded-lg bg-stone-50 p-2 border border-stone-150 text-[10px] text-stone-600 leading-normal">
+                          <strong>Note Pesanan:</strong> "{selectedOrder.notes}"
+                        </div>
+                      )}
                     </div>
 
                     {/* Order Items */}

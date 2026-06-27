@@ -8,6 +8,8 @@ import CustomerMenu from './pages/Customer/CustomerMenu';
 import CashierPOS from './pages/Cashier/CashierPOS';
 import KitchenMonitor from './pages/Kitchen/KitchenMonitor';
 import ManagerDashboard from './pages/Manager/ManagerDashboard';
+import SalesReports from './pages/Manager/SalesReports';
+import MenuManagement from './pages/Manager/MenuManagement';
 
 const MainApp = () => {
   const { user, loading } = useAuth();
@@ -57,6 +59,10 @@ const MainApp = () => {
         return <KitchenMonitor />;
       case 'manager':
         return <ManagerDashboard />;
+      case 'reports':
+        return <SalesReports />;
+      case 'menu-management':
+        return <MenuManagement />;
       default:
         return <CustomerMenu isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />;
     }

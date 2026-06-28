@@ -1,6 +1,6 @@
 const { db } = require('../config/db');
 const QRCode = require('qrcode');
-const archiver = require('archiver');
+const { ZipArchive } = require('archiver');
 
 async function getTables(req, res) {
   try {
@@ -128,7 +128,7 @@ async function exportQRCodes(req, res) {
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="locana-qr-tables.zip"');
 
-    const archive = archiver('zip', { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
     archive.on('error', err => {
       console.error('Archiver error:', err);
       if (!res.headersSent) res.status(500).json({ error: 'Failed to generate QR codes' });

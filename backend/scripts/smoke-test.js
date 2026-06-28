@@ -87,5 +87,34 @@ function assert(cond, msg) {
   const del = await j('DELETE', `/api/tables/${tableId}`, null, managerToken);
   assert(del.status === 200, 'table deleted');
 
+  console.log('8. Register + email/phone login + checkout gate');
+  const rnd = Date.now();
+  const regEmail = `smoke${rnd}@example.com`;
+  const regPhone = `08${rnd.toString().slice(-9)}`;
+  const reg = await j('POST', '/api/auth/register', {
+    name: 'Smoke Tester', email: regEmail, phone: regPhone, password: 'secret123'
+  });
+  assert(reg.status === 201 && reg.data.token, 'register returns token');
+  assert(reg.data.user && reg.data.user.role === 'customer', 'registered as customer');
+
+  const dupe = await j('POST', '/api/auth/register', {
+    name: 'Dupe', email: regEmail, password: 'secret123'
+  });
+  assert(dupe.status === 409, 'duplicate email rejected (409)');
+
+  const short = await j('POST', '/api/auth/register', {
+    name: 'Short', email: `short${rnd}@example.com`, password: '123'
+  });
+  assert(short.status === 400, 'short password rejected (400)');
+
+  const byEmail = await j('POST', '/api/auth/login', { identifier: regEmail, password: 'secret123' });
+  assert(byEmail.status === 200 && byEmail.data.token, 'login by email');
+
+  const byPhone = await j('POST', '/api/auth/login', { identifier: regPhone, password: 'secret123' });
+  assert(byPhone.status === 200 && byPhone.data.token, 'login by phone');
+
+  const badPass = await j('POST', '/api/auth/login', { identifier: regEmail, password: 'wrong' });
+  assert(badPass.status === 401, 'wrong password rejected (401)');
+
   console.log(process.exitCode ? '\nSMOKE TEST FAILED' : '\nSMOKE TEST PASSED');
 })();

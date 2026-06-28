@@ -11,7 +11,6 @@ const Login = () => {
   const [error, setError] = useState('');
 
   const demoAccounts = [
-    { label: 'Pelanggan', email: 'customer@locana.com', pass: 'customer123', color: 'bg-stone-100 hover:bg-stone-200 text-stone-800' },
     { label: 'Kasir POS', email: 'cashier@locana.com', pass: 'cashier123', color: 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200' },
     { label: 'Dapur/Barista', email: 'kitchen@locana.com', pass: 'kitchen123', color: 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200' },
     { label: 'Manager', email: 'manager@locana.com', pass: 'manager123', color: 'bg-blue-50 hover:bg-blue-100 text-blue-800 border-blue-200' },
@@ -83,7 +82,7 @@ const Login = () => {
 
           <div className="mb-6">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">Masuk Akun</h2>
-            <p className="mt-1.5 text-xs text-stone-500">Silakan masuk untuk memesan dan mengumpulkan poin loyalty.</p>
+            <p className="mt-1.5 text-xs text-stone-500">Portal akses untuk staf Locana. Pelanggan? Scan QR di meja Anda untuk memesan.</p>
           </div>
 
           {/* Form */}

@@ -41,3 +41,7 @@ serviceAccountKey.json
 mock_db.json
 **/mock_db.json
 backend/data/mock_db.json
+
+# Agent tooling (not part of the app)
+.agents/
+skills-lock.json

@@ -32,6 +32,10 @@ const MainApp = () => {
     }
   }, [user]);
 
+  // Detect /table/:n URL — render table ordering page bypassing login gate
+  const tablePathMatch = window.location.pathname.match(/^\/table\/(\d+)$/);
+  const tableRouteNumber = tablePathMatch ? parseInt(tablePathMatch[1]) : null;
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-stone-50">
@@ -39,6 +43,15 @@ const MainApp = () => {
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-600 border-t-transparent mx-auto"></div>
           <p className="text-stone-600 text-sm font-semibold">Menginisialisasi Sistem Pemesanan...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Table route: accessible without login
+  if (tableRouteNumber) {
+    return (
+      <div className="min-h-screen bg-stone-50">
+        <CustomerMenu tableNumber={tableRouteNumber} />
       </div>
     );
   }

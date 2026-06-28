@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Key, Mail, ShieldAlert, Sparkles } from 'lucide-react';
 import logoLocana from '../assets/logo-locana.png';
+import PasswordInput from '../components/PasswordInput';
 
 const Login = () => {
   const { login, error: authError } = useAuth();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -19,14 +20,14 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Email dan password harus diisi');
+    if (!identifier || !password) {
+      setError('Email/No. HP dan password harus diisi');
       return;
     }
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(identifier, password);
     } catch (err) {
       setError(err.message || 'Login gagal');
     } finally {
@@ -36,7 +37,7 @@ const Login = () => {
 
   const handleQuickLogin = async (demoEmail, demoPass) => {
     setError('');
-    setEmail(demoEmail);
+    setIdentifier(demoEmail);
     setPassword(demoPass);
     setLoading(true);
     try {
@@ -95,15 +96,15 @@ const Login = () => {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-stone-700">Email Pengguna</label>
+              <label htmlFor="identifier" className="block text-sm font-semibold text-stone-700">Email atau No. HP</label>
               <div className="relative mt-1">
                 <Mail className="absolute top-3.5 left-3.5 h-4.5 w-4.5 text-stone-400" />
                 <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@locana.com"
+                  id="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="name@locana.com / 08xxxxxxxxxx"
                   className="block w-full rounded-xl border border-stone-300 bg-white py-3 pr-4 pl-11 text-stone-900 shadow-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-sm transition"
                 />
               </div>
@@ -114,14 +115,14 @@ const Login = () => {
                 <label htmlFor="pass" className="block text-sm font-semibold text-stone-700">Kata Sandi</label>
               </div>
               <div className="relative mt-1">
-                <Key className="absolute top-3.5 left-3.5 h-4.5 w-4.5 text-stone-400" />
-                <input
+                <Key className="absolute top-3.5 left-3.5 h-4.5 w-4.5 text-stone-400 z-10" />
+                <PasswordInput
                   id="pass"
-                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="block w-full rounded-xl border border-stone-300 bg-white py-3 pr-4 pl-11 text-stone-900 shadow-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-sm transition"
+                  autoComplete="current-password"
+                  className="rounded-xl border border-stone-300 bg-white py-3 pl-11 text-stone-900 shadow-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-sm transition"
                 />
               </div>
             </div>

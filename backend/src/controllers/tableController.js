@@ -1,12 +1,10 @@
-const { db } = require('../config/db');
+const { supabase, unwrap } = require('../config/db');
 const QRCode = require('qrcode');
 const archiver = require('archiver');
 
 async function getTables(req, res) {
   try {
-    const snapshot = await db.collection('tables').get();
-    const tables = [];
-    snapshot.forEach(doc => tables.push({ id: doc.id, ...doc.data() }));
+    const tables = unwrap(await supabase.from('tables').select('*'));
     tables.sort((a, b) => a.number - b.number);
     return res.status(200).json(tables);
   } catch (err) {
@@ -28,8 +26,9 @@ async function createTable(req, res) {
 
   try {
     // Check for duplicate table number
-    const existing = await db.collection('tables').where('number', '==', parsedNumber).get();
-    if (!existing.empty) {
+    const dupes = unwrap(await supabase
+      .from('tables').select('id').eq('number', parsedNumber));
+    if (dupes.length > 0) {
       return res.status(400).json({ error: `Meja nomor ${number} sudah ada` });
     }
 
@@ -43,7 +42,7 @@ async function createTable(req, res) {
       created_by: req.user?.uid || null
     };
 
-    await db.collection('tables').doc(id).set(newTable);
+    unwrap(await supabase.from('tables').insert(newTable));
     return res.status(201).json(newTable);
   } catch (err) {
     console.error('Create table error:', err);
@@ -56,9 +55,10 @@ async function updateTable(req, res) {
   const { label, is_active } = req.body;
 
   try {
-    const ref = db.collection('tables').doc(id);
-    const doc = await ref.get();
-    if (!doc.exists) {
+    const { data: existing, error: findErr } = await supabase
+      .from('tables').select('*').eq('id', id).maybeSingle();
+    if (findErr) throw findErr;
+    if (!existing) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
@@ -70,8 +70,8 @@ async function updateTable(req, res) {
       return res.status(400).json({ error: 'No updatable fields provided' });
     }
 
-    await ref.update(updates);
-    return res.status(200).json({ id, ...doc.data(), ...updates });
+    unwrap(await supabase.from('tables').update(updates).eq('id', id));
+    return res.status(200).json({ ...existing, ...updates });
   } catch (err) {
     console.error('Update table error:', err);
     return res.status(500).json({ error: 'Failed to update table' });
@@ -82,23 +82,18 @@ async function deleteTable(req, res) {
   const { id } = req.params;
 
   try {
-    const doc = await db.collection('tables').doc(id).get();
-    if (!doc.exists) {
+    const { data: existing, error: findErr } = await supabase
+      .from('tables').select('id').eq('id', id).maybeSingle();
+    if (findErr) throw findErr;
+    if (!existing) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
     // Block delete if there are active orders for this table
-    const activeOrdersSnap = await db.collection('orders')
-      .where('table_id', '==', id)
-      .get();
-
-    const activeOrders = [];
-    activeOrdersSnap.forEach(d => {
-      const o = d.data();
-      if (['pending_payment', 'preparing'].includes(o.status)) {
-        activeOrders.push(o);
-      }
-    });
+    const tableOrders = unwrap(await supabase
+      .from('orders').select('status').eq('table_id', id));
+    const activeOrders = tableOrders.filter(o =>
+      ['pending_payment', 'preparing'].includes(o.status));
 
     if (activeOrders.length > 0) {
       return res.status(400).json({
@@ -106,7 +101,7 @@ async function deleteTable(req, res) {
       });
     }
 
-    await db.collection('tables').doc(id).delete();
+    unwrap(await supabase.from('tables').delete().eq('id', id));
     return res.status(200).json({ message: 'Table deleted successfully' });
   } catch (err) {
     console.error('Delete table error:', err);
@@ -116,9 +111,8 @@ async function deleteTable(req, res) {
 
 async function exportQRCodes(req, res) {
   try {
-    const snapshot = await db.collection('tables').where('is_active', '==', true).get();
-    const tables = [];
-    snapshot.forEach(doc => tables.push({ id: doc.id, ...doc.data() }));
+    const tables = unwrap(await supabase
+      .from('tables').select('*').eq('is_active', true));
     tables.sort((a, b) => a.number - b.number);
 
     if (tables.length === 0) {

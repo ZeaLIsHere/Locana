@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useOrder } from '../../context/OrderContext';
 import { useAuth } from '../../context/AuthContext';
 import { apiUrl } from '../../utils/api';
+import PasswordInput from '../../components/PasswordInput';
 import {
   Search,
   ShoppingBag,
@@ -22,7 +23,7 @@ import {
 } from 'lucide-react';
 
 const CustomerMenu = ({ tableNumber = null }) => {
-  const { user, login, refreshProfile } = useAuth();
+  const { user, login, register, refreshProfile } = useAuth();
   const {
     categories,
     products,
@@ -54,10 +55,15 @@ const CustomerMenu = ({ tableNumber = null }) => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPaymentSelection, setShowPaymentSelection] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [authIdentifier, setAuthIdentifier] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regBirthday, setRegBirthday] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   // Totals
   const { totalPrice, totalPointsCost, totalPointsEarned, totalItemsCount } = getCartTotals();
@@ -330,7 +336,8 @@ const CustomerMenu = ({ tableNumber = null }) => {
               </div>
               <button
                 onClick={() => {
-                  if (tableNumber && !user) {
+                  if (!user) {
+                    setAuthError('');
                     setShowLoginModal(true);
                   } else {
                     setShowPaymentSelection(true);
@@ -803,64 +810,164 @@ const CustomerMenu = ({ tableNumber = null }) => {
         </div>
       )}
 
-      {/* ===== Login Modal (table QR checkout gate) ===== */}
+      {/* ===== Auth Modal (mandatory checkout gate: Masuk / Daftar) ===== */}
       {showLoginModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-stone-900/60 backdrop-blur-xs"
-            onClick={() => { setShowLoginModal(false); setLoginError(''); }}
+            onClick={() => { setShowLoginModal(false); setAuthError(''); }}
           />
           <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl z-10 animate-slide-up space-y-4">
+            {/* Tabs */}
+            <div className="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1">
+              <button
+                onClick={() => { setAuthMode('login'); setAuthError(''); }}
+                className={`rounded-lg py-2 text-xs font-bold transition ${authMode === 'login' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}
+              >
+                Masuk
+              </button>
+              <button
+                onClick={() => { setAuthMode('register'); setAuthError(''); }}
+                className={`rounded-lg py-2 text-xs font-bold transition ${authMode === 'register' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}
+              >
+                Daftar
+              </button>
+            </div>
+
             <div className="text-center">
-              <h3 className="text-base font-bold text-stone-900">Masuk untuk Melanjutkan</h3>
-              <p className="text-xs text-stone-500 mt-1">Login member untuk checkout dan kumpulkan poin loyalty.</p>
+              <h3 className="text-base font-bold text-stone-900">
+                {authMode === 'login' ? 'Masuk untuk Melanjutkan' : 'Daftar Member Baru'}
+              </h3>
+              <p className="text-xs text-stone-500 mt-1">
+                {authMode === 'login'
+                  ? 'Login member untuk checkout dan kumpulkan poin loyalty.'
+                  : 'Buat akun untuk checkout dan mulai kumpulkan poin.'}
+              </p>
             </div>
-            {loginError && (
-              <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{loginError}</div>
+
+            {authError && (
+              <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{authError}</div>
             )}
-            <div className="space-y-3">
-              <input
-                type="email"
-                value={loginEmail}
-                onChange={e => setLoginEmail(e.target.value)}
-                placeholder="Email member"
-                className="block w-full rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-              />
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={e => setLoginPassword(e.target.value)}
-                placeholder="Password"
-                className="block w-full rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-              />
-            </div>
+
+            {authMode === 'login' ? (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={authIdentifier}
+                  onChange={e => setAuthIdentifier(e.target.value)}
+                  placeholder="Email atau No. HP"
+                  className="block w-full rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                />
+                <PasswordInput
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  placeholder="Password"
+                  autoComplete="current-password"
+                  className="rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                />
+                <button
+                  onClick={async () => {
+                    if (!authIdentifier || !authPassword) {
+                      setAuthError('Email/No. HP dan password harus diisi');
+                      return;
+                    }
+                    setAuthError('');
+                    setAuthLoading(true);
+                    try {
+                      await login(authIdentifier, authPassword);
+                      setShowLoginModal(false);
+                      setAuthIdentifier(''); setAuthPassword('');
+                      setShowPaymentSelection(true);
+                    } catch (err) {
+                      setAuthError(err.message || 'Login gagal');
+                    } finally {
+                      setAuthLoading(false);
+                    }
+                  }}
+                  disabled={authLoading}
+                  className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 py-3 text-sm font-bold text-white disabled:bg-amber-400"
+                >
+                  {authLoading ? 'Memproses...' : 'Masuk & Lanjut Checkout'}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={regName}
+                  onChange={e => setRegName(e.target.value)}
+                  placeholder="Nama lengkap"
+                  className="block w-full rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                />
+                <input
+                  type="email"
+                  value={regEmail}
+                  onChange={e => setRegEmail(e.target.value)}
+                  placeholder="Email"
+                  className="block w-full rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                />
+                <input
+                  type="tel"
+                  value={regPhone}
+                  onChange={e => setRegPhone(e.target.value)}
+                  placeholder="No. HP (opsional)"
+                  className="block w-full rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                />
+                <div>
+                  <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Tgl Lahir (opsional)</label>
+                  <input
+                    type="date"
+                    value={regBirthday}
+                    onChange={e => setRegBirthday(e.target.value)}
+                    className="block w-full mt-1 rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+                <PasswordInput
+                  value={authPassword}
+                  onChange={e => setAuthPassword(e.target.value)}
+                  placeholder="Password (min. 6 karakter)"
+                  autoComplete="new-password"
+                  className="rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                />
+                <button
+                  onClick={async () => {
+                    if (!regName || !regEmail || !authPassword) {
+                      setAuthError('Nama, email, dan password harus diisi');
+                      return;
+                    }
+                    if (authPassword.length < 6) {
+                      setAuthError('Password minimal 6 karakter');
+                      return;
+                    }
+                    setAuthError('');
+                    setAuthLoading(true);
+                    try {
+                      await register({
+                        name: regName,
+                        email: regEmail,
+                        phone: regPhone || undefined,
+                        birthday: regBirthday || undefined,
+                        password: authPassword
+                      });
+                      setShowLoginModal(false);
+                      setRegName(''); setRegEmail(''); setRegPhone(''); setRegBirthday(''); setAuthPassword('');
+                      setShowPaymentSelection(true);
+                    } catch (err) {
+                      setAuthError(err.message || 'Registrasi gagal');
+                    } finally {
+                      setAuthLoading(false);
+                    }
+                  }}
+                  disabled={authLoading}
+                  className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 py-3 text-sm font-bold text-white disabled:bg-amber-400"
+                >
+                  {authLoading ? 'Memproses...' : 'Daftar & Lanjut Checkout'}
+                </button>
+              </div>
+            )}
+
             <button
-              onClick={async () => {
-                if (!loginEmail || !loginPassword) {
-                  setLoginError('Email dan password harus diisi');
-                  return;
-                }
-                setLoginError('');
-                setLoginLoading(true);
-                try {
-                  await login(loginEmail, loginPassword);
-                  setShowLoginModal(false);
-                  setLoginEmail('');
-                  setLoginPassword('');
-                  setShowPaymentSelection(true);
-                } catch (err) {
-                  setLoginError(err.message || 'Login gagal');
-                } finally {
-                  setLoginLoading(false);
-                }
-              }}
-              disabled={loginLoading}
-              className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 py-3 text-sm font-bold text-white disabled:bg-amber-400"
-            >
-              {loginLoading ? 'Memproses...' : 'Masuk & Lanjut Checkout'}
-            </button>
-            <button
-              onClick={() => { setShowLoginModal(false); setLoginError(''); }}
+              onClick={() => { setShowLoginModal(false); setAuthError(''); }}
               className="w-full rounded-xl border border-stone-200 py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50"
             >
               Batal

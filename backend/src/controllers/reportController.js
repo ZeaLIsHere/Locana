@@ -1,27 +1,15 @@
-const { db } = require('../config/db');
+const { supabase, unwrap } = require('../config/db');
 
 async function getDashboardReports(req, res) {
   try {
     // 1. Fetch all completed orders
-    const ordersSnapshot = await db.collection('orders').get();
-    const orders = [];
-    ordersSnapshot.forEach(doc => {
-      const order = doc.data();
-      // Ensure we only process paid or completed orders for financial metrics
-      if (order.payment_status === 'paid' && order.status !== 'cancelled') {
-        orders.push(order);
-      }
-    });
+    const allOrders = unwrap(await supabase.from('orders').select('*'));
+    const orders = allOrders.filter(order =>
+      order.payment_status === 'paid' && order.status !== 'cancelled');
 
     // 2. Fetch all members
-    const usersSnapshot = await db.collection('users').get();
-    const members = [];
-    usersSnapshot.forEach(doc => {
-      const u = doc.data();
-      if (u.role === 'customer') {
-        members.push({ id: doc.id, ...u });
-      }
-    });
+    const allUsers = unwrap(await supabase.from('users').select('*'));
+    const members = allUsers.filter(u => u.role === 'customer');
 
     // Sort orders by date for time-series calculations
     orders.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -205,14 +193,9 @@ async function getSalesReports(req, res) {
 
   try {
     // Fetch all paid orders
-    const ordersSnapshot = await db.collection('orders').get();
-    let orders = [];
-    ordersSnapshot.forEach(doc => {
-      const order = doc.data();
-      if (order.payment_status === 'paid' && order.status !== 'cancelled') {
-        orders.push(order);
-      }
-    });
+    const allOrders = unwrap(await supabase.from('orders').select('*'));
+    let orders = allOrders.filter(order =>
+      order.payment_status === 'paid' && order.status !== 'cancelled');
 
     // Apply date filters
     if (startDate) {
@@ -229,17 +212,13 @@ async function getSalesReports(req, res) {
     orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     // Fetch products and categories for category-based reports
-    const productsSnapshot = await db.collection('products').get();
+    const productsArr = unwrap(await supabase.from('products').select('*'));
     const productsMap = {};
-    productsSnapshot.forEach(doc => {
-      productsMap[doc.id] = doc.data();
-    });
+    productsArr.forEach(p => { productsMap[p.id] = p; });
 
-    const categoriesSnapshot = await db.collection('categories').get();
+    const categoriesArr = unwrap(await supabase.from('categories').select('*'));
     const categoriesMap = {};
-    categoriesSnapshot.forEach(doc => {
-      categoriesMap[doc.id] = doc.data();
-    });
+    categoriesArr.forEach(c => { categoriesMap[c.id] = c; });
 
     let result = [];
 
@@ -508,14 +487,9 @@ async function getPosReports(req, res) {
   }
 
   try {
-    const ordersSnapshot = await db.collection('orders').get();
-    let orders = [];
-    ordersSnapshot.forEach(doc => {
-      const order = doc.data();
-      if (order.payment_status === 'paid' && order.status !== 'cancelled') {
-        orders.push(order);
-      }
-    });
+    const allOrders = unwrap(await supabase.from('orders').select('*'));
+    let orders = allOrders.filter(order =>
+      order.payment_status === 'paid' && order.status !== 'cancelled');
 
     if (startDate) {
       const start = new Date(startDate);
@@ -531,11 +505,9 @@ async function getPosReports(req, res) {
     orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
     // Fetch users for staff reports
-    const usersSnapshot = await db.collection('users').get();
+    const usersArr = unwrap(await supabase.from('users').select('*'));
     const usersMap = {};
-    usersSnapshot.forEach(doc => {
-      usersMap[doc.id] = doc.data();
-    });
+    usersArr.forEach(u => { usersMap[u.id] = u; });
 
     let result = [];
 

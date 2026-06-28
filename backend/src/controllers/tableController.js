@@ -21,9 +21,14 @@ async function createTable(req, res) {
     return res.status(400).json({ error: 'number and label are required' });
   }
 
+  const parsedNumber = parseInt(number);
+  if (isNaN(parsedNumber) || parsedNumber < 1) {
+    return res.status(400).json({ error: 'number must be a positive integer' });
+  }
+
   try {
     // Check for duplicate table number
-    const existing = await db.collection('tables').where('number', '==', parseInt(number)).get();
+    const existing = await db.collection('tables').where('number', '==', parsedNumber).get();
     if (!existing.empty) {
       return res.status(400).json({ error: `Meja nomor ${number} sudah ada` });
     }
@@ -31,7 +36,7 @@ async function createTable(req, res) {
     const id = `tbl-${Date.now()}`;
     const newTable = {
       id,
-      number: parseInt(number),
+      number: parsedNumber,
       label: label.trim(),
       capacity: parseInt(capacity) || 4,
       is_active: true,
@@ -151,6 +156,7 @@ async function exportQRCodes(req, res) {
     if (!res.headersSent) {
       return res.status(500).json({ error: 'Failed to generate QR codes' });
     }
+    archive.destroy(err);
   }
 }
 

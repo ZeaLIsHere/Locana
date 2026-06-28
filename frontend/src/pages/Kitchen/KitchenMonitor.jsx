@@ -121,6 +121,11 @@ const KitchenMonitor = () => {
                         <div>
                           <h4 className="text-lg font-black tracking-wider text-stone-900 leading-none">{order.order_number}</h4>
                           <span className="text-[10px] font-semibold text-stone-500 uppercase mt-1 block">Pelanggan: {order.customer_name}</span>
+                          {order.table_number && (
+                            <span className="inline-flex items-center gap-1 rounded-lg bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 mt-1.5">
+                              Meja {order.table_number}
+                            </span>
+                          )}
                         </div>
                         {/* Wait Timer Pill */}
                         <div className={`rounded-lg px-2.5 py-1 text-xs font-bold border flex items-center gap-1 shrink-0 ${getWaitTimeColor(waitMins)}`}>

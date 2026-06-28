@@ -309,6 +309,11 @@ const CashierPOS = () => {
                         </div>
                         <h4 className="text-lg font-black tracking-wide text-stone-900 mt-1">{o.order_number}</h4>
                         <p className="text-xs font-semibold text-stone-700 mt-1">{o.customer_name}</p>
+                        {o.table_number && (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 mt-1">
+                            Meja {o.table_number}
+                          </span>
+                        )}
                         <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-stone-100 text-xs">
                           <span className="text-stone-500">{o.items.length} Item</span>
                           <span className="font-bold text-stone-900">{formatIDR(o.total_price)}</span>
@@ -327,6 +332,11 @@ const CashierPOS = () => {
                       <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600">Detail Pesanan</span>
                       <h3 className="text-2xl font-black text-stone-900 tracking-wider mt-0.5">{selectedOrder.order_number}</h3>
                       <p className="text-xs text-stone-500 mt-1">Pelanggan: {selectedOrder.customer_name}</p>
+                      {selectedOrder.table_number && (
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800 mt-1">
+                          Meja {selectedOrder.table_number}
+                        </span>
+                      )}
                       {selectedOrder.notes && (
                         <div className="mt-2 rounded-lg bg-stone-50 p-2 border border-stone-150 text-[10px] text-stone-600 leading-normal">
                           <strong>Note Pesanan:</strong> "{selectedOrder.notes}"

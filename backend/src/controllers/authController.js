@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { db } = require('../config/db');
+const { supabase, unwrap } = require('../config/db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'locana_secret_key_123';
 
@@ -13,16 +13,16 @@ async function login(req, res) {
 
   try {
     // Look up user by email
-    const userQuery = await db.collection('users')
-      .where('email', '==', email.trim().toLowerCase())
-      .get();
+    const { data: userData, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email.trim().toLowerCase())
+      .maybeSingle();
+    if (error) throw error;
 
-    if (userQuery.empty) {
+    if (!userData) {
       return res.status(401).json({ error: 'Email atau password salah' });
     }
-
-    const userDoc = userQuery.docs[0];
-    const userData = userDoc.data();
 
     // Verify password
     const isPasswordValid = bcrypt.compareSync(password, userData.password_hash);
@@ -33,7 +33,7 @@ async function login(req, res) {
     // Generate token (valid for 24h)
     const token = jwt.sign(
       {
-        id: userDoc.id,
+        id: userData.id,
         username: userData.username,
         email: userData.email,
         role: userData.role,
@@ -47,13 +47,13 @@ async function login(req, res) {
     const profile = { ...userData };
     delete profile.password_hash;
 
-    const metrics = await computeMemberMetrics(userDoc.id, userData);
+    const metrics = await computeMemberMetrics(userData.id, userData);
 
     return res.status(200).json({
       message: 'Login successful',
       token,
       user: {
-        id: userDoc.id,
+        id: userData.id,
         ...profile,
         ...metrics
       }
@@ -66,18 +66,22 @@ async function login(req, res) {
 
 async function getProfile(req, res) {
   try {
-    const userDoc = await db.collection('users').doc(req.user.id).get();
-    if (!userDoc.exists) {
+    const { data: userData, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', req.user.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!userData) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const userData = userDoc.data();
     delete userData.password_hash;
 
-    const metrics = await computeMemberMetrics(userDoc.id, userData);
+    const metrics = await computeMemberMetrics(userData.id, userData);
 
     return res.status(200).json({
-      id: userDoc.id,
+      id: userData.id,
       ...userData,
       ...metrics
     });
@@ -100,9 +104,10 @@ async function computeMemberMetrics(userId, userDocData) {
 
   try {
     // Fetch completed/paid orders for this customer
-    const ordersSnapshot = await db.collection('orders')
-      .where('customer_id', '==', userId)
-      .get();
+    const ordersSnapshot = unwrap(await supabase
+      .from('orders')
+      .select('*')
+      .eq('customer_id', userId));
 
     let totalSpentLastYear = 0;
     let latestOrderDate = null;
@@ -110,8 +115,7 @@ async function computeMemberMetrics(userId, userDocData) {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(now.getFullYear() - 1);
 
-    ordersSnapshot.forEach(doc => {
-      const o = doc.data();
+    ordersSnapshot.forEach(o => {
       if (o.payment_status === 'paid' && o.status !== 'cancelled') {
         const orderDate = new Date(o.created_at);
         if (orderDate >= oneYearAgo) {

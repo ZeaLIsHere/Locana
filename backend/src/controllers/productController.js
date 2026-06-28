@@ -1,12 +1,8 @@
-const { db } = require('../config/db');
+const { supabase, unwrap } = require('../config/db');
 
 async function getCategories(req, res) {
   try {
-    const snapshot = await db.collection('categories').get();
-    const categories = [];
-    snapshot.forEach(doc => {
-      categories.push({ id: doc.id, ...doc.data() });
-    });
+    const categories = unwrap(await supabase.from('categories').select('*'));
     return res.status(200).json(categories);
   } catch (err) {
     console.error('Get categories error:', err);
@@ -18,11 +14,7 @@ async function getProducts(req, res) {
   const { category, search } = req.query;
 
   try {
-    const snapshot = await db.collection('products').get();
-    let products = [];
-    snapshot.forEach(doc => {
-      products.push({ id: doc.id, ...doc.data() });
-    });
+    let products = unwrap(await supabase.from('products').select('*'));
 
     // Apply category filter if query exists
     if (category) {
@@ -67,8 +59,8 @@ async function createProduct(req, res) {
       is_available: is_available !== undefined ? is_available : true
     };
 
-    await db.collection('products').doc(productId).set(newProduct);
-    
+    unwrap(await supabase.from('products').insert({ id: productId, ...newProduct }));
+
     return res.status(201).json({
       message: 'Product created successfully',
       product: { id: productId, ...newProduct }
@@ -84,10 +76,10 @@ async function updateProduct(req, res) {
   const updateData = req.body;
 
   try {
-    const productRef = db.collection('products').doc(id);
-    const doc = await productRef.get();
-
-    if (!doc.exists) {
+    const { data: existing, error: findErr } = await supabase
+      .from('products').select('id').eq('id', id).maybeSingle();
+    if (findErr) throw findErr;
+    if (!existing) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
@@ -103,7 +95,7 @@ async function updateProduct(req, res) {
       }
     });
 
-    await productRef.update(dataToUpdate);
+    unwrap(await supabase.from('products').update(dataToUpdate).eq('id', id));
 
     return res.status(200).json({
       message: 'Product updated successfully',
@@ -119,15 +111,15 @@ async function deleteProduct(req, res) {
   const { id } = req.params;
 
   try {
-    const productRef = db.collection('products').doc(id);
-    const doc = await productRef.get();
-
-    if (!doc.exists) {
+    const { data: existing, error: findErr } = await supabase
+      .from('products').select('id').eq('id', id).maybeSingle();
+    if (findErr) throw findErr;
+    if (!existing) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
     // Instead of deleting from DB, let's mark it as unavailable to preserve order histories
-    await productRef.update({ is_available: false });
+    unwrap(await supabase.from('products').update({ is_available: false }).eq('id', id));
 
     return res.status(200).json({
       message: 'Product soft-deleted/marked unavailable successfully'

@@ -63,6 +63,10 @@ async function updateTable(req, res) {
     if (capacity !== undefined) updates.capacity = parseInt(capacity);
     if (is_active !== undefined) updates.is_active = Boolean(is_active);
 
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No updatable fields provided' });
+    }
+
     await ref.update(updates);
     return res.status(200).json({ id, ...doc.data(), ...updates });
   } catch (err) {
@@ -122,7 +126,10 @@ async function exportQRCodes(req, res) {
     res.setHeader('Content-Disposition', 'attachment; filename="locana-qr-tables.zip"');
 
     const archive = archiver('zip', { zlib: { level: 9 } });
-    archive.on('error', err => { throw err; });
+    archive.on('error', err => {
+      console.error('Archiver error:', err);
+      if (!res.headersSent) res.status(500).json({ error: 'Failed to generate QR codes' });
+    });
     archive.pipe(res);
 
     const baseUrl = process.env.FRONTEND_URL || 'https://locana.app';

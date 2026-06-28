@@ -12,7 +12,7 @@ function generateOrderNumber() {
 }
 
 async function createOrder(req, res) {
-  const { customer_id, items, payment_method, notes } = req.body;
+  const { customer_id, items, payment_method, notes, table_number } = req.body;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'Order items are required' });
@@ -29,6 +29,18 @@ async function createOrder(req, res) {
     productsSnapshot.forEach(doc => {
       productsMap[doc.id] = { id: doc.id, ...doc.data() };
     });
+
+    // 1.1 Look up table_id from table_number
+    let tableId = null;
+    if (table_number) {
+      const tableSnap = await db.collection('tables')
+        .where('number', '==', parseInt(table_number))
+        .where('is_active', '==', true)
+        .get();
+      if (!tableSnap.empty) {
+        tableId = tableSnap.docs[0].id;
+      }
+    }
 
     // 2. Validate customer points if customer_id provided
     let customerDoc = null;
@@ -197,6 +209,8 @@ async function createOrder(req, res) {
       customer_id: customer_id || null,
       customer_name: customerData ? customerData.name : 'Guest/Umum',
       cashier_id: null,
+      table_id: tableId,
+      table_number: table_number ? parseInt(table_number) : null,
       status,
       payment_method,
       payment_status,

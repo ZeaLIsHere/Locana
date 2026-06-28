@@ -88,6 +88,7 @@ async function register(req, res) {
     const newUser = {
       id: 'user-' + Date.now(),
       name: name.trim(),
+      username: null,
       email: normalizedEmail,
       phone: phone ? phone.trim() : null,
       birthday: birthday || null,

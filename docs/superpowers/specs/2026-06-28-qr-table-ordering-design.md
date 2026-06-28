@@ -138,6 +138,22 @@ Customer bisa langsung scan lagi untuk repeat order
 
 ---
 
+## Modifikasi Login Page
+
+Login page biasa (akses langsung via URL, misal `https://locana.app`) **dihapus opsi customer-nya**. Halaman ini sekarang hanya untuk staff: kasir, dapur, manager, owner.
+
+**Perubahan di `Login.jsx`:**
+- Hapus opsi role `customer` dari form login (dropdown, tab, atau demo account button yang ada)
+- Tambah teks kecil di bawah form: *"Pelanggan? Scan QR di meja Anda untuk memesan."*
+- Validasi backend tetap sama — tidak ada perubahan di `authController.js`
+
+**Implikasi:**
+- Customer tidak bisa mengakses sistem lewat URL langsung — harus lewat QR
+- Jika customer iseng buka URL root, mereka hanya melihat halaman login staff (tidak ada cara masuk sebagai customer dari sini)
+- Modal login di `/table/:tableNumber` tetap mengizinkan customer login dengan akun member mereka
+
+---
+
 ## Out of Scope
 
 - Shared cart antar device di meja yang sama

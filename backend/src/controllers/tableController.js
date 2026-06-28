@@ -16,7 +16,7 @@ async function getTables(req, res) {
 }
 
 async function createTable(req, res) {
-  const { number, label, capacity } = req.body;
+  const { number, label } = req.body;
   if (!number || !label) {
     return res.status(400).json({ error: 'number and label are required' });
   }
@@ -38,7 +38,6 @@ async function createTable(req, res) {
       id,
       number: parsedNumber,
       label: label.trim(),
-      capacity: parseInt(capacity) || 4,
       is_active: true,
       created_at: new Date().toISOString(),
       created_by: req.user?.uid || null
@@ -54,7 +53,7 @@ async function createTable(req, res) {
 
 async function updateTable(req, res) {
   const { id } = req.params;
-  const { label, capacity, is_active } = req.body;
+  const { label, is_active } = req.body;
 
   try {
     const ref = db.collection('tables').doc(id);
@@ -65,7 +64,6 @@ async function updateTable(req, res) {
 
     const updates = {};
     if (label !== undefined) updates.label = label.trim();
-    if (capacity !== undefined) updates.capacity = parseInt(capacity);
     if (is_active !== undefined) updates.is_active = Boolean(is_active);
 
     if (Object.keys(updates).length === 0) {

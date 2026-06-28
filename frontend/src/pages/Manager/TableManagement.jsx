@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiUrl } from '../../utils/api';
-import { Plus, Trash2, Edit2, Download, QrCode, Users, Check, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Download, QrCode, Check, X } from 'lucide-react';
 
 const TableManagement = () => {
   const { token } = useAuth();
@@ -14,13 +14,11 @@ const TableManagement = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newNumber, setNewNumber] = useState('');
   const [newLabel, setNewLabel] = useState('');
-  const [newCapacity, setNewCapacity] = useState('4');
   const [addLoading, setAddLoading] = useState(false);
 
   // Edit state
   const [editingId, setEditingId] = useState(null);
   const [editLabel, setEditLabel] = useState('');
-  const [editCapacity, setEditCapacity] = useState('');
 
   const [exportLoading, setExportLoading] = useState(false);
 
@@ -55,12 +53,12 @@ const TableManagement = () => {
       const res = await fetch(apiUrl('/api/tables'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ number: parseInt(newNumber), label: newLabel, capacity: parseInt(newCapacity) || 4 })
+        body: JSON.stringify({ number: parseInt(newNumber), label: newLabel })
       });
       const data = await res.json();
       if (!res.ok) { showMessage(data.error || 'Gagal menambah meja', true); return; }
       setTables(prev => [...prev, data].sort((a, b) => a.number - b.number));
-      setNewNumber(''); setNewLabel(''); setNewCapacity('4');
+      setNewNumber(''); setNewLabel('');
       setShowAddForm(false);
       showMessage(`Meja ${data.number} berhasil ditambahkan`);
     } catch (err) {
@@ -91,7 +89,7 @@ const TableManagement = () => {
       const res = await fetch(apiUrl(`/api/tables/${id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ label: editLabel, capacity: parseInt(editCapacity) })
+        body: JSON.stringify({ label: editLabel })
       });
       const data = await res.json();
       if (!res.ok) { showMessage(data.error || 'Gagal menyimpan', true); return; }
@@ -211,16 +209,6 @@ const TableManagement = () => {
                 className="w-36 rounded-xl border border-stone-300 px-3 py-2 text-sm outline-none focus:border-amber-500"
               />
             </div>
-            <div>
-              <label className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block mb-1">Kapasitas</label>
-              <input
-                type="number"
-                value={newCapacity}
-                onChange={e => setNewCapacity(e.target.value)}
-                min="1"
-                className="w-20 rounded-xl border border-stone-300 px-3 py-2 text-sm outline-none focus:border-amber-500"
-              />
-            </div>
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -264,16 +252,6 @@ const TableManagement = () => {
                     onChange={e => setEditLabel(e.target.value)}
                     className="w-full rounded-lg border border-stone-300 px-3 py-1.5 text-sm outline-none focus:border-amber-500"
                   />
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={editCapacity}
-                      onChange={e => setEditCapacity(e.target.value)}
-                      min="1"
-                      className="w-16 rounded-lg border border-stone-300 px-2 py-1.5 text-sm outline-none focus:border-amber-500"
-                    />
-                    <span className="text-xs text-stone-500">kursi</span>
-                  </div>
                   <div className="flex gap-2">
                     <button onClick={() => handleSaveEdit(table.id)} className="flex-1 rounded-lg bg-amber-600 text-white text-xs font-bold py-1.5">
                       <Check className="h-3.5 w-3.5 mx-auto" />
@@ -294,13 +272,9 @@ const TableManagement = () => {
                       {table.is_active ? 'Aktif' : 'Nonaktif'}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-stone-500">
-                    <Users className="h-3.5 w-3.5" />
-                    <span>{table.capacity} kursi</span>
-                  </div>
                   <div className="pt-2 border-t border-stone-100 flex gap-2">
                     <button
-                      onClick={() => { setEditingId(table.id); setEditLabel(table.label); setEditCapacity(String(table.capacity)); }}
+                      onClick={() => { setEditingId(table.id); setEditLabel(table.label); }}
                       className="flex-1 rounded-lg border border-stone-200 py-1.5 text-[11px] font-semibold text-stone-600 hover:bg-stone-50 flex items-center justify-center gap-1"
                     >
                       <Edit2 className="h-3 w-3" /> Edit

@@ -91,7 +91,7 @@ Tolak jika ada order dengan status `preparing` atau `pending_payment` yang memil
 | `ManagerDashboard` | Kolom/filter tambahan `table_number` di daftar order. |
 | `SalesReports` | Filter by table number untuk analisis per meja. |
 | `Sidebar` | Tambah menu `"Manajemen Meja"` untuk role `manager` dan `owner`. |
-| `App.jsx` | Tambah route `/table/:tableNumber` → `TableMenu` (tanpa Navbar/Sidebar staff). |
+| `App.jsx` | Tambah route `/table/:tableNumber` → `TableMenu` (tanpa Navbar/Sidebar staff). Route ini **bypass login gate** — bisa diakses tanpa akun, modal login hanya muncul saat checkout. |
 | `orderController.js` | Terima `table_id` dan `table_number` dari request body, simpan ke order. |
 
 ---

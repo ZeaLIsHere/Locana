@@ -5,6 +5,7 @@ const { login, getProfile } = require('../controllers/authController');
 const { getCategories, getProducts, createProduct, updateProduct, deleteProduct } = require('../controllers/productController');
 const { createOrder, getOrders, getOrderById, processPayment, updateOrderStatus } = require('../controllers/orderController');
 const { getDashboardReports, getSalesReports, getPosReports } = require('../controllers/reportController');
+const { getTables, createTable, updateTable, deleteTable, exportQRCodes } = require('../controllers/tableController');
 const { registerClient } = require('../config/sse');
 const { authenticateToken, verifyRoles } = require('../middleware/authMiddleware');
 
@@ -28,6 +29,13 @@ router.get('/orders', authenticateToken, verifyRoles('owner', 'manager', 'cashie
 router.get('/orders/:id', getOrderById);
 router.post('/orders/:id/pay', authenticateToken, verifyRoles('owner', 'cashier'), processPayment);
 router.put('/orders/:id/status', authenticateToken, verifyRoles('owner', 'cashier', 'kitchen'), updateOrderStatus);
+
+// Table Routes
+router.get('/tables', getTables);
+router.get('/tables/qr-export', authenticateToken, verifyRoles('owner', 'manager'), exportQRCodes);
+router.post('/tables', authenticateToken, verifyRoles('owner', 'manager'), createTable);
+router.put('/tables/:id', authenticateToken, verifyRoles('owner', 'manager'), updateTable);
+router.delete('/tables/:id', authenticateToken, verifyRoles('owner', 'manager'), deleteTable);
 
 // Report Routes
 router.get('/reports/dashboard', authenticateToken, verifyRoles('owner', 'manager'), getDashboardReports);

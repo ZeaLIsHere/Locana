@@ -10,6 +10,7 @@ import KitchenMonitor from './pages/Kitchen/KitchenMonitor';
 import ManagerDashboard from './pages/Manager/ManagerDashboard';
 import SalesReports from './pages/Manager/SalesReports';
 import MenuManagement from './pages/Manager/MenuManagement';
+import TableManagement from './pages/Manager/TableManagement';
 
 const MainApp = () => {
   const { user, loading } = useAuth();
@@ -76,6 +77,8 @@ const MainApp = () => {
         return <SalesReports />;
       case 'menu-management':
         return <MenuManagement />;
+      case 'table-management':
+        return <TableManagement />;
       default:
         return <CustomerMenu isCartOpen={isCartOpen} setIsCartOpen={setIsCartOpen} />;
     }

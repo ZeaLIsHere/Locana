@@ -1,14 +1,15 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  BarChart3, 
-  ChefHat, 
-  CreditCard, 
-  Layers, 
-  ShoppingBag, 
+import {
+  BarChart3,
+  ChefHat,
+  CreditCard,
+  Layers,
+  ShoppingBag,
   Users,
   Settings,
-  FileText
+  FileText,
+  QrCode
 } from 'lucide-react';
 
 const Sidebar = ({ currentPage, onPageChange }) => {
@@ -33,6 +34,12 @@ const Sidebar = ({ currentPage, onPageChange }) => {
       id: 'menu-management',
       label: 'Kelola Menu',
       icon: Settings,
+      roles: ['owner', 'manager']
+    },
+    {
+      id: 'table-management',
+      label: 'Manajemen Meja',
+      icon: QrCode,
       roles: ['owner', 'manager']
     },
     {

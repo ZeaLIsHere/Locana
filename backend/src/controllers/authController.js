@@ -15,10 +15,16 @@ async function login(req, res) {
   try {
     // Resolve by email (contains '@') or phone (otherwise)
     const isEmail = loginId.includes('@');
-    const query = supabase.from('users').select('*');
-    const { data: userData, error } = isEmail
-      ? await query.eq('email', loginId.toLowerCase()).maybeSingle()
-      : await query.eq('phone', loginId).maybeSingle();
+    let userData, error;
+    if (isEmail) {
+      ({ data: userData, error } = await supabase
+        .from('users').select('*').eq('email', loginId.toLowerCase()).maybeSingle());
+    } else {
+      // phone is not unique-constrained; tolerate >1 match instead of erroring
+      const resp = await supabase.from('users').select('*').eq('phone', loginId).limit(1);
+      error = resp.error;
+      userData = resp.data && resp.data.length ? resp.data[0] : null;
+    }
     if (error) throw error;
 
     if (!userData) {
@@ -74,6 +80,9 @@ async function register(req, res) {
   if (password.length < 6) {
     return res.status(400).json({ error: 'Password minimal 6 karakter' });
   }
+  if (!email.includes('@')) {
+    return res.status(400).json({ error: 'Format email tidak valid' });
+  }
 
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -83,6 +92,15 @@ async function register(req, res) {
     if (findErr) throw findErr;
     if (existing) {
       return res.status(409).json({ error: 'Email sudah terdaftar' });
+    }
+
+    if (phone && phone.trim()) {
+      const { data: phoneExists, error: phoneErr } = await supabase
+        .from('users').select('id').eq('phone', phone.trim()).limit(1);
+      if (phoneErr) throw phoneErr;
+      if (phoneExists && phoneExists.length) {
+        return res.status(409).json({ error: 'Nomor HP sudah terdaftar' });
+      }
     }
 
     const newUser = {

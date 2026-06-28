@@ -338,6 +338,7 @@ const CustomerMenu = ({ tableNumber = null }) => {
                 onClick={() => {
                   if (!user) {
                     setAuthError('');
+                    setAuthMode('login');
                     setShowLoginModal(true);
                   } else {
                     setShowPaymentSelection(true);
@@ -950,7 +951,7 @@ const CustomerMenu = ({ tableNumber = null }) => {
                         password: authPassword
                       });
                       setShowLoginModal(false);
-                      setRegName(''); setRegEmail(''); setRegPhone(''); setRegBirthday(''); setAuthPassword('');
+                      setRegName(''); setRegEmail(''); setRegPhone(''); setRegBirthday(''); setAuthIdentifier(''); setAuthPassword('');
                       setShowPaymentSelection(true);
                     } catch (err) {
                       setAuthError(err.message || 'Registrasi gagal');

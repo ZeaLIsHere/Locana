@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { db } = require('./db');
+const { supabase } = require('./db');
 
 async function seedDatabase(onlyMenu = false) {
   console.log('Database Seeder: Starting seeding process...');
@@ -22,10 +22,11 @@ async function seedDatabase(onlyMenu = false) {
     { id: 'cat-kendil', name: 'KENDIL KELANA', slug: 'kendil' }
   ];
 
-  for (const cat of categories) {
-    await db.collection('categories').doc(cat.id).set(cat);
+  {
+    const { error } = await supabase.from('categories').upsert(categories);
+    if (error) throw error;
   }
-  console.log('Database Seeder: Seeded 14 new categories');
+  console.log('Database Seeder: Seeded 14 categories');
 
   // 2. Seed Products
   const products = [
@@ -86,10 +87,11 @@ async function seedDatabase(onlyMenu = false) {
     { id: 'prod-mini-croissant-plain', category_id: 'cat-pastries', name: 'Mini Croissant Plain', description: 'Roti croissant mini polos yang garing renyah dipanggang mentega.', price: 10000, points_cost: 100, image_url: '/data-menu/Mini Croissant Plain.jpg', is_available: true }
   ];
 
-  for (const prod of products) {
-    await db.collection('products').doc(prod.id).set(prod);
+  {
+    const { error } = await supabase.from('products').upsert(products);
+    if (error) throw error;
   }
-  console.log('Database Seeder: Seeded/Updated 36 products matched to customer list');
+  console.log('Database Seeder: Seeded/Updated 36 products');
 
 
   if (onlyMenu) {
@@ -182,10 +184,11 @@ async function seedDatabase(onlyMenu = false) {
     }
   ];
 
-  for (const user of users) {
-    await db.collection('users').doc(user.id).set(user);
+  {
+    const { error } = await supabase.from('users').upsert(users);
+    if (error) throw error;
   }
-  console.log('Database Seeder: Seeded 7 users (including 5 demo roles)');
+  console.log('Database Seeder: Seeded 7 users');
 
   // 4. Generate 90 days of historic transaction data for beautiful reports!
   console.log('Database Seeder: Generating 90 days of transaction data...');
@@ -362,13 +365,19 @@ async function seedDatabase(onlyMenu = false) {
     }
   }
 
-  // Batch insert orders in parallel
-  console.log(`Database Seeder: Uploading ${generatedOrders.length} orders to Cloud Firestore...`);
-  await Promise.all(generatedOrders.map(o => db.collection('orders').doc(o.id).set(o)));
-  
-  // Batch insert loyalty transactions in parallel
-  console.log(`Database Seeder: Uploading ${generatedLoyaltyTx.length} loyalty transactions to Cloud Firestore...`);
-  await Promise.all(generatedLoyaltyTx.map(l => db.collection('loyalty_transactions').doc(l.id).set(l)));
+  // Batch insert orders
+  console.log(`Database Seeder: Uploading ${generatedOrders.length} orders...`);
+  {
+    const { error } = await supabase.from('orders').upsert(generatedOrders);
+    if (error) throw error;
+  }
+
+  // Batch insert loyalty transactions
+  console.log(`Database Seeder: Uploading ${generatedLoyaltyTx.length} loyalty transactions...`);
+  {
+    const { error } = await supabase.from('loyalty_transactions').upsert(generatedLoyaltyTx);
+    if (error) throw error;
+  }
 
   console.log(`Database Seeder: Successfully generated ${generatedOrders.length} historical orders`);
   console.log(`Database Seeder: Successfully generated ${generatedLoyaltyTx.length} loyalty point transactions`);

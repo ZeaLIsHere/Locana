@@ -5,7 +5,8 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon --ignore data/ src/server.js"
+    "dev": "nodemon --ignore data/ src/server.js",
+    "seed": "node src/config/seeder.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

@@ -48,7 +48,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     setError(null);
     try {
       const response = await fetch(apiUrl('/api/auth/login'), {
@@ -56,13 +56,39 @@ export const AuthProvider = ({ children }) => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ identifier, password })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.error || 'Login gagal. Periksa kembali email dan password.');
+      }
+
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem('locana_token', data.token);
+      localStorage.setItem('locana_user', JSON.stringify(data.user));
+      return data.user;
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  const register = async (payload) => {
+    setError(null);
+    try {
+      const response = await fetch(apiUrl('/api/auth/register'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registrasi gagal. Coba lagi.');
       }
 
       setToken(data.token);
@@ -90,7 +116,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, error, login, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, token, loading, error, login, register, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

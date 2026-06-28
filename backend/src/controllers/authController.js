@@ -5,29 +5,30 @@ const { supabase, unwrap } = require('../config/db');
 const JWT_SECRET = process.env.JWT_SECRET || 'locana_secret_key_123';
 
 async function login(req, res) {
-  const { email, password } = req.body;
+  const { identifier, email, password } = req.body;
+  const loginId = (identifier || email || '').trim();
 
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password are required' });
+  if (!loginId || !password) {
+    return res.status(400).json({ error: 'Email/No. HP dan password harus diisi' });
   }
 
   try {
-    // Look up user by email
-    const { data: userData, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('email', email.trim().toLowerCase())
-      .maybeSingle();
+    // Resolve by email (contains '@') or phone (otherwise)
+    const isEmail = loginId.includes('@');
+    const query = supabase.from('users').select('*');
+    const { data: userData, error } = isEmail
+      ? await query.eq('email', loginId.toLowerCase()).maybeSingle()
+      : await query.eq('phone', loginId).maybeSingle();
     if (error) throw error;
 
     if (!userData) {
-      return res.status(401).json({ error: 'Email atau password salah' });
+      return res.status(401).json({ error: 'Email/No. HP atau password salah' });
     }
 
     // Verify password
     const isPasswordValid = bcrypt.compareSync(password, userData.password_hash);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Email atau password salah' });
+      return res.status(401).json({ error: 'Email/No. HP atau password salah' });
     }
 
     // Generate token (valid for 24h)
@@ -61,6 +62,72 @@ async function login(req, res) {
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ error: 'Internal server error during login' });
+  }
+}
+
+async function register(req, res) {
+  const { name, email, password, phone, birthday } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: 'Nama, email, dan password harus diisi' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password minimal 6 karakter' });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  try {
+    const { data: existing, error: findErr } = await supabase
+      .from('users').select('id').eq('email', normalizedEmail).maybeSingle();
+    if (findErr) throw findErr;
+    if (existing) {
+      return res.status(409).json({ error: 'Email sudah terdaftar' });
+    }
+
+    const newUser = {
+      id: 'user-' + Date.now(),
+      name: name.trim(),
+      email: normalizedEmail,
+      phone: phone ? phone.trim() : null,
+      birthday: birthday || null,
+      password_hash: bcrypt.hashSync(password, 10),
+      role: 'customer',
+      loyalty_points: 0,
+      created_at: new Date().toISOString()
+    };
+
+    unwrap(await supabase.from('users').insert(newUser));
+
+    const token = jwt.sign(
+      {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+        role: newUser.role,
+        name: newUser.name
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    const profile = { ...newUser };
+    delete profile.password_hash;
+
+    const metrics = await computeMemberMetrics(newUser.id, newUser);
+
+    return res.status(201).json({
+      message: 'Registration successful',
+      token,
+      user: {
+        id: newUser.id,
+        ...profile,
+        ...metrics
+      }
+    });
+  } catch (err) {
+    console.error('Register error:', err);
+    return res.status(500).json({ error: 'Internal server error during registration' });
   }
 }
 
@@ -189,5 +256,6 @@ async function computeMemberMetrics(userId, userDocData) {
 
 module.exports = {
   login,
+  register,
   getProfile
 };

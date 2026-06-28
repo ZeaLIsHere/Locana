@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { login, getProfile } = require('../controllers/authController');
+const { login, register, getProfile } = require('../controllers/authController');
 const { getCategories, getProducts, createProduct, updateProduct, deleteProduct } = require('../controllers/productController');
 const { createOrder, getOrders, getOrderById, processPayment, updateOrderStatus } = require('../controllers/orderController');
 const { getDashboardReports, getSalesReports, getPosReports } = require('../controllers/reportController');
@@ -14,6 +14,7 @@ router.get('/realtime', registerClient);
 
 // Auth Routes
 router.post('/auth/login', login);
+router.post('/auth/register', register);
 router.get('/auth/profile', authenticateToken, getProfile);
 
 // Menu & Category Routes

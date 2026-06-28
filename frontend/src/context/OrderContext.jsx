@@ -210,7 +210,7 @@ export const OrderProvider = ({ children }) => {
   };
 
   // Place order
-  const checkout = async (paymentMethod, customNotes = '') => {
+  const checkout = async (paymentMethod, customNotes = '', tableNumber = null) => {
     const { totalPointsCost } = getCartTotals();
     
     // Safety check for points
@@ -227,7 +227,8 @@ export const OrderProvider = ({ children }) => {
         is_redeemed_by_points: item.is_redeemed_by_points
       })),
       payment_method: paymentMethod,
-      notes: customNotes
+      notes: customNotes,
+      table_number: tableNumber || null
     };
 
     try {

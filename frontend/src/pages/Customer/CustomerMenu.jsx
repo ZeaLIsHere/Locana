@@ -21,8 +21,8 @@ import {
   FileText
 } from 'lucide-react';
 
-const CustomerMenu = () => {
-  const { user, refreshProfile } = useAuth();
+const CustomerMenu = ({ tableNumber = null }) => {
+  const { user, login, refreshProfile } = useAuth();
   const {
     categories,
     products,
@@ -53,6 +53,11 @@ const CustomerMenu = () => {
   const [simulatingPayment, setSimulatingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPaymentSelection, setShowPaymentSelection] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
 
   // Totals
   const { totalPrice, totalPointsCost, totalPointsEarned, totalItemsCount } = getCartTotals();
@@ -108,7 +113,7 @@ const CustomerMenu = () => {
   const handleCheckout = async (method) => {
     try {
       setShowPaymentSelection(false);
-      const result = await checkout(method, checkoutNotes);
+      const result = await checkout(method, checkoutNotes, tableNumber);
       setCheckoutResult(result);
       setShowCheckoutModal(true);
       setPaymentSuccess(false);
@@ -324,7 +329,13 @@ const CustomerMenu = () => {
                 <p className="text-lg font-black text-orange-600">{formatIDR(totalPrice + 1000)}</p>
               </div>
               <button
-                onClick={() => setShowPaymentSelection(true)}
+                onClick={() => {
+                  if (tableNumber && !user) {
+                    setShowLoginModal(true);
+                  } else {
+                    setShowPaymentSelection(true);
+                  }
+                }}
                 className="btn-transition rounded-xl bg-orange-600 hover:bg-orange-700 px-6 py-3 text-xs font-bold text-white shadow-md shadow-orange-600/10 flex items-center gap-1.5 shrink-0"
               >
                 <span>Lanjut Pembayaran</span>
@@ -527,6 +538,12 @@ const CustomerMenu = () => {
           <span className="text-xs font-bold uppercase tracking-widest text-amber-500 font-mono">Cafe Locana</span>
           <h2 className="text-2xl font-bold md:text-3xl mt-1">Locana Menu</h2>
           <p className="text-stone-400 text-sm mt-1 max-w-md">Nikmati kopi premium dan makanan lezat pilihan kami langsung di meja Anda.</p>
+          {tableNumber && (
+            <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-600/20 border border-amber-500/40 px-3 py-1.5">
+              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">Meja {tableNumber}</span>
+            </div>
+          )}
         </div>
         {user?.role === 'customer' && (
           <div className="z-10 bg-amber-900/40 rounded-xl p-4 border border-amber-800/40 flex items-center gap-4 shrink-0 self-start md:self-center">
@@ -783,6 +800,72 @@ const CustomerMenu = () => {
             alt={selectedProduct.name}
             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
           />
+        </div>
+      )}
+
+      {/* ===== Login Modal (table QR checkout gate) ===== */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-stone-900/60 backdrop-blur-xs"
+            onClick={() => { setShowLoginModal(false); setLoginError(''); }}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl z-10 animate-slide-up space-y-4">
+            <div className="text-center">
+              <h3 className="text-base font-bold text-stone-900">Masuk untuk Melanjutkan</h3>
+              <p className="text-xs text-stone-500 mt-1">Login member untuk checkout dan kumpulkan poin loyalty.</p>
+            </div>
+            {loginError && (
+              <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{loginError}</div>
+            )}
+            <div className="space-y-3">
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={e => setLoginEmail(e.target.value)}
+                placeholder="Email member"
+                className="block w-full rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+              />
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={e => setLoginPassword(e.target.value)}
+                placeholder="Password"
+                className="block w-full rounded-xl border border-stone-300 bg-white py-2.5 px-4 text-stone-900 outline-none text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+              />
+            </div>
+            <button
+              onClick={async () => {
+                if (!loginEmail || !loginPassword) {
+                  setLoginError('Email dan password harus diisi');
+                  return;
+                }
+                setLoginError('');
+                setLoginLoading(true);
+                try {
+                  await login(loginEmail, loginPassword);
+                  setShowLoginModal(false);
+                  setLoginEmail('');
+                  setLoginPassword('');
+                  setShowPaymentSelection(true);
+                } catch (err) {
+                  setLoginError(err.message || 'Login gagal');
+                } finally {
+                  setLoginLoading(false);
+                }
+              }}
+              disabled={loginLoading}
+              className="w-full rounded-xl bg-amber-600 hover:bg-amber-700 py-3 text-sm font-bold text-white disabled:bg-amber-400"
+            >
+              {loginLoading ? 'Memproses...' : 'Masuk & Lanjut Checkout'}
+            </button>
+            <button
+              onClick={() => { setShowLoginModal(false); setLoginError(''); }}
+              className="w-full rounded-xl border border-stone-200 py-2.5 text-xs font-semibold text-stone-600 hover:bg-stone-50"
+            >
+              Batal
+            </button>
+          </div>
         </div>
       )}
 

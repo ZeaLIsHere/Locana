@@ -8,7 +8,7 @@ create table if not exists users (
   name text,
   phone text,
   birthday date,
-  loyalty_points int default 0,
+  loyalty_points numeric default 0,
   created_at timestamptz default now()
 );
 
@@ -53,7 +53,7 @@ create table if not exists loyalty_transactions (
   id text primary key,
   customer_id text,
   order_id text,
-  points int,
+  points numeric,
   transaction_type text,
   created_at timestamptz
 );

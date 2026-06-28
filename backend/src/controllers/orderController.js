@@ -1,4 +1,4 @@
-const { db } = require('../config/db');
+const { supabase, unwrap } = require('../config/db');
 const { broadcastEvent } = require('../config/sse');
 
 // Utility to generate unique 8 digit alphanumeric code (e.g. LOC12345)
@@ -24,33 +24,33 @@ async function createOrder(req, res) {
 
   try {
     // 1. Fetch all products to verify details
-    const productsSnapshot = await db.collection('products').get();
+    const productsArr = unwrap(await supabase.from('products').select('*'));
     const productsMap = {};
-    productsSnapshot.forEach(doc => {
-      productsMap[doc.id] = { id: doc.id, ...doc.data() };
-    });
+    productsArr.forEach(p => { productsMap[p.id] = p; });
 
     // 1.1 Look up table_id from table_number
     let tableId = null;
     if (table_number) {
-      const tableSnap = await db.collection('tables')
-        .where('number', '==', parseInt(table_number))
-        .where('is_active', '==', true)
-        .get();
-      if (!tableSnap.empty) {
-        tableId = tableSnap.docs[0].id;
+      const tableRows = unwrap(await supabase
+        .from('tables')
+        .select('id')
+        .eq('number', parseInt(table_number))
+        .eq('is_active', true));
+      if (tableRows.length > 0) {
+        tableId = tableRows[0].id;
       }
     }
 
     // 2. Validate customer points if customer_id provided
-    let customerDoc = null;
     let customerData = null;
     if (customer_id) {
-      customerDoc = await db.collection('users').doc(customer_id).get();
-      if (!customerDoc.exists) {
+      const { data: cust, error: custErr } = await supabase
+        .from('users').select('*').eq('id', customer_id).maybeSingle();
+      if (custErr) throw custErr;
+      if (!cust) {
         return res.status(404).json({ error: 'Customer not found' });
       }
-      customerData = customerDoc.data();
+      customerData = cust;
     }
 
     // 2.1 Calculate customer metrics: tier multiplier and birthday activity
@@ -58,15 +58,13 @@ async function createOrder(req, res) {
     let isBirthdayActive = false;
     if (customer_id && customerData) {
       // Calculate accumulated spending in the last 12 months
-      const ordersSnapshot = await db.collection('orders')
-        .where('customer_id', '==', customer_id)
-        .get();
+      const ordersSnapshot = unwrap(await supabase
+        .from('orders').select('*').eq('customer_id', customer_id));
       let totalSpentLastYear = 0;
       const now = new Date();
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(now.getFullYear() - 1);
-      ordersSnapshot.forEach(doc => {
-        const o = doc.data();
+      ordersSnapshot.forEach(o => {
         if (o.payment_status === 'paid' && o.status !== 'cancelled') {
           const orderDate = new Date(o.created_at);
           if (orderDate >= oneYearAgo) {
@@ -223,7 +221,7 @@ async function createOrder(req, res) {
     };
 
     // Save order
-    await db.collection('orders').doc(orderId).set(newOrder);
+    unwrap(await supabase.from('orders').insert(newOrder));
 
     // Mock QRIS payment payload (e.g. Midtrans mockup)
     let qris_url = null;
@@ -252,11 +250,7 @@ async function getOrders(req, res) {
   const { status, customer_id, order_number } = req.query;
 
   try {
-    const snapshot = await db.collection('orders').get();
-    let orders = [];
-    snapshot.forEach(doc => {
-      orders.push({ id: doc.id, ...doc.data() });
-    });
+    let orders = unwrap(await supabase.from('orders').select('*'));
 
     // Sort by created_at descending
     orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -283,11 +277,13 @@ async function getOrderById(req, res) {
   const { id } = req.params;
 
   try {
-    const doc = await db.collection('orders').doc(id).get();
-    if (!doc.exists) {
+    const { data: order, error } = await supabase
+      .from('orders').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    if (!order) {
       return res.status(404).json({ error: 'Order not found' });
     }
-    return res.status(200).json({ id: doc.id, ...doc.data() });
+    return res.status(200).json(order);
   } catch (err) {
     console.error('Get order by ID error:', err);
     return res.status(500).json({ error: 'Failed to fetch order details' });
@@ -299,14 +295,12 @@ async function processPayment(req, res) {
   const { cashier_id } = req.body; // cash payment processed by cashier
 
   try {
-    const orderRef = db.collection('orders').doc(id);
-    const doc = await orderRef.get();
-
-    if (!doc.exists) {
+    const { data: orderData, error: findErr } = await supabase
+      .from('orders').select('*').eq('id', id).maybeSingle();
+    if (findErr) throw findErr;
+    if (!orderData) {
       return res.status(404).json({ error: 'Order not found' });
     }
-
-    const orderData = doc.data();
     if (orderData.payment_status === 'paid') {
       return res.status(400).json({ error: 'Order is already paid' });
     }
@@ -318,45 +312,45 @@ async function processPayment(req, res) {
       cashier_id: cashier_id || null
     };
 
-    await orderRef.update(updatedFields);
-    
+    unwrap(await supabase.from('orders').update(updatedFields).eq('id', id));
+
     // Resolve loyalty points changes
     if (orderData.customer_id) {
-      const userRef = db.collection('users').doc(orderData.customer_id);
-      const userDoc = await userRef.get();
-      
-      if (userDoc.exists) {
-        const userData = userDoc.data();
+      const { data: userData, error: uErr } = await supabase
+        .from('users').select('*').eq('id', orderData.customer_id).maybeSingle();
+      if (uErr) throw uErr;
+
+      if (userData) {
         const ptsChange = orderData.points_earned - orderData.points_redeemed;
         const newPtsBalance = Math.max(0, (userData.loyalty_points || 0) + ptsChange);
-        
-        await userRef.update({
-          loyalty_points: newPtsBalance
-        });
+
+        unwrap(await supabase.from('users')
+          .update({ loyalty_points: newPtsBalance })
+          .eq('id', orderData.customer_id));
 
         // Insert points history transaction
         if (orderData.points_earned > 0) {
           const earnTxId = `loy-${id}-earn`;
-          await db.collection('loyalty_transactions').doc(earnTxId).set({
+          unwrap(await supabase.from('loyalty_transactions').insert({
             id: earnTxId,
             customer_id: orderData.customer_id,
             order_id: id,
             points: orderData.points_earned,
             transaction_type: 'earn',
             created_at: new Date().toISOString()
-          });
+          }));
         }
 
         if (orderData.points_redeemed > 0) {
           const redeemTxId = `loy-${id}-redeem`;
-          await db.collection('loyalty_transactions').doc(redeemTxId).set({
+          unwrap(await supabase.from('loyalty_transactions').insert({
             id: redeemTxId,
             customer_id: orderData.customer_id,
             order_id: id,
             points: -orderData.points_redeemed,
             transaction_type: 'redeem',
             created_at: new Date().toISOString()
-          });
+          }));
         }
       }
     }
@@ -386,17 +380,15 @@ async function updateOrderStatus(req, res) {
   }
 
   try {
-    const orderRef = db.collection('orders').doc(id);
-    const doc = await orderRef.get();
-
-    if (!doc.exists) {
+    const { data: orderData, error: findErr } = await supabase
+      .from('orders').select('*').eq('id', id).maybeSingle();
+    if (findErr) throw findErr;
+    if (!orderData) {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    const orderData = doc.data();
-    
     // Update order status
-    await orderRef.update({ status });
+    unwrap(await supabase.from('orders').update({ status }).eq('id', id));
 
     const updatedOrder = { ...orderData, status };
     
